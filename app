@@ -17,14 +17,14 @@ from openapi_client.rest import ApiException
 import cfRestApiV3 as cfApi
 
 
-apiPath ="https://conformance.cryptofacilities.com/derivatives"
-#apiPath = "https://www.cryptofacilities.com/derivatives"# https://conformance.cryptofacilities.com/derivatives"
-#apiPublicKey = "lBTg/GwBoDSyHzIY/8h9BYiXxNq97ZhUKjgscl6Sm/hTRSWcv1sGznec"# xyyXQVbDy+RwqdK1/4lkL2XowM75/t7atsj8/WyGvk9WPBECO9XPLimX"  # accessible on your Account page under Settings -> API Keys
-apiPublicKey ="xyyXQVbDy+RwqdK1/4lkL2XowM75/t7atsj8/WyGvk9WPBECO9XPLimX"  # accessible on your Account page under Settings -> API Keys
-#apiPrivateKey ="ROR2h15z2WelO4OXH5MrS4c5TeIJXCE6bq+/l0q4l5GF9stHCNVGWzM3wBNjkrzuVKvCJrXaZoRVYhL47mg2eZzg"# aeaE+g+JMQqXIRu5YhWTCrIldZBd6WZt95tlqiFynmRmFogpDcmZALUsmhLnkaGGx+DZ9ueG54YVIqjZFVDEPaaD"  # accessible on your Account page under Settings -> API Keys
-apiPrivateKey ="aeaE+g+JMQqXIRu5YhWTCrIldZBd6WZt95tlqiFynmRmFogpDcmZALUsmhLnkaGGx+DZ9ueG54YVIqjZFVDEPaaD"  # accessible on your Account page under Settings -> API Keys
-timeout = 20
-checkCertificate = False#True#False  # when using the test environment, this must be set to "False"
+#apiPath ="https://conformance.cryptofacilities.com/derivatives"
+apiPath = "https://www.cryptofacilities.com/derivatives"# https://conformance.cryptofacilities.com/derivatives"
+apiPublicKey = "lBTg/GwBoDSyHzIY/8h9BYiXxNq97ZhUKjgscl6Sm/hTRSWcv1sGznec"# xyyXQVbDy+RwqdK1/4lkL2XowM75/t7atsj8/WyGvk9WPBECO9XPLimX"  # accessible on your Account page under Settings -> API Keys
+#apiPublicKey ="xyyXQVbDy+RwqdK1/4lkL2XowM75/t7atsj8/WyGvk9WPBECO9XPLimX"  # accessible on your Account page under Settings -> API Keys
+apiPrivateKey ="ROR2h15z2WelO4OXH5MrS4c5TeIJXCE6bq+/l0q4l5GF9stHCNVGWzM3wBNjkrzuVKvCJrXaZoRVYhL47mg2eZzg"# aeaE+g+JMQqXIRu5YhWTCrIldZBd6WZt95tlqiFynmRmFogpDcmZALUsmhLnkaGGx+DZ9ueG54YVIqjZFVDEPaaD"  # accessible on your Account page under Settings -> API Keys
+#apiPrivateKey ="aeaE+g+JMQqXIRu5YhWTCrIldZBd6WZt95tlqiFynmRmFogpDcmZALUsmhLnkaGGx+DZ9ueG54YVIqjZFVDEPaaD"  # accessible on your Account page under Settings -> API Keys
+timeout = 5
+checkCertificate = True#False  # when using the test environment, this must be set to "False"
 useNonce = False  # nonce is optional
 
 cfPublic = cfApi.cfApiMethods(apiPath, timeout=timeout, checkCertificate=checkCertificate)
@@ -160,9 +160,10 @@ class MarketMaker(object):
 
 		self.futures_prv = cp.deepcopy(self.futures)
 
-		insts = client_public.public_get_instruments_get(currency='BTC' or 'ETH', kind='future', expired='false')['result']
+		instsB = client_public.public_get_instruments_get(currency='BTC', kind='future', expired='false')['result']
+		instsE = client_public.public_get_instruments_get(currency='ETH', kind='future', expired='false')['result']
 
-		self.futures = sort_by_key({i['instrument_name']: i for i in (insts) if i['kind'] == 'future'})
+		self.futures = sort_by_key({i['instrument_name']: i for i in (instsB+instsE) if i['kind'] == 'future'})
 
 	def get_funding(self):
 		return client_private.private_get_account_summary_get(currency='BTC', extended='true')['result']['session_funding']
@@ -188,43 +189,33 @@ class MarketMaker(object):
 
 		if self.monitor:
 			return None
- 
-		hold_longQtyAll_CF = sum( [ o['size'] for o in [ o for o in json.loads(cfPrivate.get_openpositions())[
-            'openPositions']if o['side'] == 'long' and  o['symbol'][:9][4]=='b' ] ] )
-		hold_shortQtyAll_CF = sum( [ o['size'] for o in [ o for o in json.loads(cfPrivate.get_openpositions())[
-            'openPositions']if o['side'] == 'short' and  o['symbol'][:9][4]=='b' ] ] )
+
+		try:
+			position_CF= json.loads(cfPrivate.get_openpositions())['openPositions']
+
+		except:
+			position_CF=0
+		hold_longQtyAll_CF = sum( [ o['size'] for o in [ o for o in position_CF if o['side'] == 'long' and  o['symbol'][:9][4]=='b']])
+		hold_shortQtyAll_CF= sum( [ o['size'] for o in [ o for o in position_CF if o['side'] == 'short' and o['symbol'][:9][4]=='b']])
         
 		y=list(self.futures.keys())
-
-		fut_CF=([ o['symbol'] for o in [ o for o in json.loads(cfPublic.getinstruments())[
-            'instruments'] if o['symbol'][10:][:1]== '2'  and  o['symbol'][:9][4]=='b' ] ])
+		non_xbt_CF= min ([ o['symbol'] for o in [ o for o in
         
-		perp_CF=  ([ o['symbol'] for o in [ o for o in                json.loads(cfPublic.getinstruments())['instruments'] if(                        o['symbol'][:1] == 'f'  or    o['symbol']=='pi_xbtusd' )and                o['symbol'][:9][4]=='b' ]])#.split('.')
+        
+                json.loads(cfPublic.getinstruments())['instruments']   if
+                o['symbol'][10:][:1]== '2'  or   o['symbol']=='pv_xrpxbt'  ]])
+		xbt_CF=  ([ o['symbol'] for o in [ o for o in json.loads(cfPublic.getinstruments())['instruments']   if(o['symbol'][:1] == 'f'  or    o['symbol']=='pi_xbtusd' )and            o['symbol'][:9][4]=='b' ]])
 
-		deriCF= perp_CF + y
+		deriCF= (list(reversed( xbt_CF + y) ))
+		print('perp',non_xbt_CF)
+		print(deriCF)
         
 		for fut in deriCF:
 
 			deri_test = 0 if (fut[:1] == 'p' or fut[:1]=='f') else 1
 
-			last_prc_CF = json.loads(cfPrivate.get_fills())['fills']
-        
-			last_sell_prc = ( [ o['price'] for o in [ o for o in last_prc_CF if o['side'] == 'sell' and  o['symbol']==fut  ] ] )
-			last_sell_prc_CF = 0 if last_sell_prc == [] else last_sell_prc [0]
-			last_buy_prc = ( [ o['price'] for o in [ o for o in last_prc_CF if o['side'] == 'buy' and  o['symbol']==fut ] ] )
-			last_buy_prc_CF = 0 if last_buy_prc == [] else last_buy_prc [0]
-
 			account_CF =json.loads(cfPrivate.get_accounts())['accounts']['fi_xbtusd']		
-			liqs_CF=account_CF['triggerEstimates']['im']
 
-			try:
-				direction_CF= [o['side'] for o in[o for o in json.loads(cfPrivate.get_openpositions())['openPositions']if o['symbol']==fut]] [0]
-
-			except:
-				direction_CF=0
-			positions =0 if deri_test == 0 else  client_account.private_get_positions_get(currency=(fut[:3]), kind='future')['result']#['instrument_name' == fut]
-			size_CF=0 if direction_CF==0 else [o['size'] for o in[o for o in json.loads(cfPrivate.get_openpositions())['openPositions']if o['symbol']==fut]] [0]
-			avg_prc_CF=0 if direction_CF==0 else [o['price'] for o in[o for o in json.loads(cfPrivate.get_openpositions())['openPositions']   if o['symbol']==fut]][0] 
 			equity =  account_CF['balances']['xbt']>0
 
 			account= account_CF if deri_test == 0 else client_account.private_get_account_summary_get(currency=(fut[:3]), extended='true')['result']
@@ -233,16 +224,36 @@ class MarketMaker(object):
 			funding = account_CF['auxiliary']['funding']  if deri_test == 0 else account['session_funding']
 			waktu = datetime.now()
 			
-			ob = 0 if deri_test==0 else client_market.public_get_order_book_get(fut)['result']
+			last_prc_CF = json.loads(cfPrivate.get_fills())['fills']
+        
+			last_sell_prc = ( [ o['price'] for o in [ o for o in last_prc_CF if o['side'] == 'sell' and  o['symbol']==fut  ] ] )
+			last_sell_prc_CF = 0 if last_sell_prc == [] else last_sell_prc [0]
+			last_buy_prc = ( [ o['price'] for o in [ o for o in last_prc_CF if o['side'] == 'buy' and  o['symbol']==fut ] ] )
+			last_buy_prc_CF = 0 if last_buy_prc == [] else last_buy_prc [0]
+
+			liqs_CF=account_CF['triggerEstimates']['im']
+
+			try:
+				symbol=( 0 if position_CF == 0 else [ o['symbol'] for o in[o for o in position_CF if o['symbol']==fut]] [0]) if deri_test == 0 else 0
+			except:
+				symbol=0
+			print(fut,'\n',position_CF==[])
+			direction_CF=( 0 if symbol == 0 else [ o['side'] for o in[o for o in position_CF if o['symbol']==fut]] [0]) if deri_test == 0 else 0
+
+			positions =0 if deri_test == 0 else  client_account.private_get_positions_get(currency=(fut[:3]), kind='future')['result']
+			size_CF=0 if direction_CF==0 else [o['size'] for o in[o for o in   position_CF if o['symbol']==fut]] [0]
+
+			avg_prc_CF=0 if direction_CF==0 else [o['price'] for o in[o for o in  position_CF if o['symbol']==fut]] [0]
+			ob =  json.loads(cfPublic.getorderbook(fut.upper()))['orderBook'] if deri_test==0 else client_market.public_get_order_book_get(fut)['result']
 	
-			bid_prc = ob['best_bid_price'] if deri_test == 1 else json.loads(cfPublic.getorderbook(fut.upper()))['orderBook']['bids'][0][0]
-			ask_prc = ob ['best_ask_price'] if deri_test == 1 else json.loads(cfPublic.getorderbook(fut.upper()))['orderBook']['asks'][0][0]
+			bid_prc = ob['best_bid_price'] if deri_test == 1 else ob ['bids'][0][0]
+			ask_prc = ob ['best_ask_price'] if deri_test == 1 else ob ['asks'][0][0]
 
 			try:
 				size=account ['balances' ][fut ] 
 			except:
 				size=0
-			positions =0 if deri_test == 0 else  client_account.private_get_positions_get(currency=(fut[:3]), kind='future')['result']#['instrument_name' == fut]
+			positions =0 if deri_test == 0 else  client_account.private_get_positions_get(currency=(fut[:3]), kind='future')['result']
 			position = 0 if deri_test == 0 else client_account.private_get_position_get(fut)['result']
 			size=  size if deri_test == 0 else abs(position['size']) 
 
@@ -251,7 +262,7 @@ class MarketMaker(object):
 			hold_longQtyAll 	= 0 if deri_test ==0 else  sum([o['size'] for o in [o for o in positions if o['direction'] == 'buy' ]])
 
 			hold_shortQtyAll 	= 0 if deri_test ==0 else  sum([o['size'] for o in [o for o in positions  if o['direction'] == 'sell' ]])
-			hold_net		= (hold_longQtyAll+hold_shortQtyAll) if deri_test ==1 else (hold_longQtyAll_CF + hold_shortQtyAll_CF)
+			hold_net		= (hold_longQtyAll+hold_shortQtyAll) if deri_test ==1 else (hold_longQtyAll_CF - hold_shortQtyAll_CF)
 
 			ord_history 		= 0 if deri_test == 0 else client_trading.private_get_order_history_by_instrument_get (instrument_name=fut, count=2)['result']
 			time_sell 		= 0 if deri_test== 0 else ([o['last_update_timestamp'] for o in [o for o in ord_history if o['direction'] == 'sell' ]])
@@ -317,20 +328,14 @@ class MarketMaker(object):
 
 			just_sell = 1 if time_sell > time_buy else 0
 			just_buy = 1 if time_buy  >  time_sell else 0
-
 			for i in range(max(nbids, nasks)):
 
 				place_bids = 'true'
 				place_asks = 'true'
-				qty = 10 if fut [:3]=='BTC' else 1#
-				qty = 100 if fut [:3]=='BTC'and sub_name=='MwaHaHa_5' else qty#
-				qty = 100 if sub_name=='CF' else qty#
 				stamp = 0 if deri_test==0 else  max([o['creation_timestamp'] for o in [o for o in inst ]])
 				stamp_new = 0 if deri_test==0 else ( [ o['instrument_name'] for o in [ o for o in inst if o['creation_timestamp'] == stamp  ] ] )[0]
 
                            	#batasan transaksi
-				#maintenance margin < 60%, lebih manual
-				#print('MM',MM)
 				place_bids  =  equity==True and open_qty < 1 
 				place_asks =   equity==True and open_qty < 1 
 
@@ -339,15 +344,21 @@ class MarketMaker(object):
 				#lawannya, future dengan tanggal jatuh tempo terlama (mengurangi resiko forced sell)-->1
 				#future tersisa dipakai sebagai pengimbang/anti likuidasi-->0
 
-				perp_test=(1 if max(perp_CF)==fut else 0) if deri_test ==0 else ( 1 if fut [-10:] == '-PERPETUAL' else 0)
-				fut_test_CF=( 1 if ( max(perp_CF) != fut and min(perp_CF) != fut) else 0 )
+				perp_test=(1 if max(xbt_CF)==fut else 0) if deri_test ==0 else ( 1 if fut [-10:] == '-PERPETUAL' else 0)
+				fut_test_CF=( 1 if ( max(xbt_CF) != fut and min(xbt_CF) != fut) else 0 )
 			
 				fut_test=fut_test_CF if deri_test==0 else (1 if stamp_new == fut  else 0)
+				fut_test=fut_test_CF if deri_test==0 else (1 if stamp_new == fut  else 0)
 				prc=0
+				qty = 10 if fut [:3]=='BTC' else 1#
+				qty = 10 if fut [:3]=='BTC'and sub_name=='MwaHaHa_5' else qty#
+				qty = 10 if sub_name=='CF' else qty#
+				qty = 10 if fut=='pv_xrpxb' else qty#
 				if place_bids:
 
 					#oustanding posisi buy hanya boleh 1 per instrumen
 					#buka posisi
+					margin_down = margin * ( 1 if (fut_test ==1 and perp_test==1) else (2 if direction=='buy' else 1))
 					if fut_test ==1 and  size == 0:
 						prc = bid_prc
 						print ('1',sub_name,fut,prc)
@@ -360,10 +371,11 @@ class MarketMaker(object):
 					elif bid_prc  < avg_prc and size !=0  and direction=='buy':
 
 						if last_buy_prc==0 :
-							prc = min(bid_prc,avg_prc- (avg_prc*margin * ( 1 if size==100 else 2) ))
+							 
+							prc = min(bid_prc,avg_prc- (avg_prc*margin_down ))
 							print ('15',sub_name,fut,prc,bid_prc  < avg_prc,size,hold_net,last_sell_prc,last_buy_prc)
 						elif  last_buy_prc !=0 :
-							prc = min(bid_prc,last_buy_prc - (last_buy_prc*margin  * (1 if size<100 else 2)) )
+							prc = min(bid_prc,last_buy_prc - (last_buy_prc*margin_down) )
 							print ('16',sub_name,fut,prc,bid_prc  < avg_prc,size,hold_net,last_buy_prc)
 						else:
 							prc = 0
@@ -375,15 +387,15 @@ class MarketMaker(object):
 						if  perp_test == 1 or perp_test==0  :
 
 							if time_sell>time_buy and wait_sell < 5000:
-								prc  = min(bid_prc,last_sell_prc -  (last_sell_prc*margin/20))
+								prc  = min(bid_prc,last_sell_prc -  (last_sell_prc*margin/10))
 								print ('8',sub_name,fut,prc,hold_net,time_sell>time_buy)
 
 							elif last_sell_prc == 0:
-								prc =  min(bid_prc,avg_prc-(1/2))
+								prc =  min(bid_prc,avg_prc-(avg_prc*margin_down ))
 								print ('9',sub_name,fut,prc,hold_net,last_sell_prc)
 								
 							else :
-								prc = avg_prc-(1/2)
+								prc = avg_prc-(avg_prc*margin_down )
 								print ('10',sub_name,fut,hold_net,direction)
 						else:
 							prc = 0
@@ -398,42 +410,54 @@ class MarketMaker(object):
 				"symbol": fut.upper(),
 				"side": "buy",
 				"size": qty,
-				"limitPrice": round(prc-(1/4),0),
+				"limitPrice": round(prc-(1/2),0),
 				"reduceOnly": "false"
 				}
-
-
 				mod = open_qty%qty
 				edit = {
-				"limitPrice": bid_prc,
+				"limitPrice": bid_prc,#-(1/2),
 				"size": qty-mod,
+				"orderId": oid,
+				}
+				edit2 = {
+				"limitPrice": min(bid_prc,round(prc,0)),#-(1/2),
+				"size": qty,
+				"orderId": oid,
 				}
 				if prc !=0 and place_bids==True:
 					if deri_test == 1:
 
-						client_trading.private_buy_get(instrument_name=fut, amount=qty, price=prc, post_only= 'true')
+						client_trading.private_buy_get(instrument_name=fut, label='test',     amount=qty, price=prc, type='limit',post_only= 'true')
 
 					elif deri_test == 0:
 						cfPrivate.send_order_1(limit_order)
 
 					else:
-						sleep(1)
+						print('')
 
-				if open_time > 100 :# and api ==True:
+				ask_vs_open_prc =False if open_prc==0 else (ask_prc - open_prc)/ask_prc > margin/2
+				bid_vs_open_prc =False if open_prc==0 else (open_prc-bid_prc)/bid_prc > margin/2
 
-					if deri_test == 1 and open_api==True:
 
-						client_trading.private_cancel_get( oid )
-					elif deri_test == 0 and open_time>100000 and mod==0:
+				if  bid_vs_open_prc == True :# and api ==True:
 
+					if deri_test == 1 and open_api==True and open_qty !=0 and oid !=0:
+
+						try:
+							client_trading.private_cancel_get( oid )
+						except:
+							print('')
+					elif deri_test == 0 and  mod==0 or open_qty>1 :
+
+						print(fut,cfPrivate.cancel_order(oid))
 						cfPrivate.cancel_order(oid)
 
 					elif deri_test==  0 and  mod !=0 and place_bids==True:
 
 						cfPrivate.edit_order(edit)
-						print(cfPrivate.edit_order(edit))
+						print('edit',fut,cfPrivate.edit_order(edit))
 					else:
-						sleep(1)
+						print('')
 
 				# OFFERS
 
@@ -442,6 +466,7 @@ class MarketMaker(object):
 					# cek posisi awal
 					#perpetual diutamakan short karena ada fundingnya, kebanyakan di posisi short
                                        #liqs offer BTC-27DEC19 False 0 True 2 True
+					margin_up = margin * ( 1 if (fut_test ==1 and perp_test==1) else (2 if direction=='sell' else 1))                                      
 					if  perp_test == 1 and   size == 0 :
 						prc = ask_prc
 						print ('A',sub_name,fut,prc)
@@ -453,12 +478,13 @@ class MarketMaker(object):
 							
                      # misi average up
 					elif ask_prc  > avg_prc and size !=0  and direction == 'sell':
+
 						if  last_sell_prc== 0:#wait_buy > 1200
-							prc = max(ask_prc,avg_prc+(avg_prc*margin  * (1 if size==100 else 2)))
+							prc = max(ask_prc,avg_prc+(avg_prc*margin_up))
 							print ('O',sub_name,fut,prc,ask_prc  > avg_prc,size,hold_net,last_sell_prc,last_buy_prc)
 
 						elif  last_sell_prc !=0 :#wait_buy > 1200
-							prc =max(ask_prc,last_sell_prc +      (last_sell_prc*margin  * (1 if size<100 else 2)) )
+							prc =max(ask_prc,last_sell_prc +      (last_sell_prc*margin_up) )
 							print ('P2',sub_name,fut,prc,bid_prc  < avg_prc,size,hold_net,last_sell_prc)
 						else:
 							prc = 0
@@ -468,16 +494,16 @@ class MarketMaker(object):
 
 						if   perp_test==0  or perp_test == 1:
 							if time_buy>time_sell and wait_buy<5000:
-								prc =max(ask_prc, last_buy_prc + (last_buy_prc*margin/20) )
+								prc =max(ask_prc, last_buy_prc + (last_buy_prc*margin/10) )
 								print ('H',sub_name,fut,prc,hold_net,time_buy>time_sell)
 	
 							elif last_buy_prc == 0:
-								prc =max( ask_prc,avg_prc +(1/2)) 		
+								prc =max( ask_prc,avg_prc +(avg_prc*margin_up)) 		
 								print ('I',sub_name,fut,prc,hold_net,last_buy_prc)
 
 							else:
-								prc = max(ask_prc,avg_prc+(1/2)) 		
-								print('J',sub_name,fut,prc,hold_net,direction,wait_buy)
+								prc = max(ask_prc,avg_prc+(avg_prc*margin_up)) 		
+								print('J',sub_name,fut,prc,hold_net,direction,wait_buy,time_buy,time_sell)
 
 						else:
 							prc = 0
@@ -492,14 +518,21 @@ class MarketMaker(object):
 				"symbol": fut.upper(),
 				"side": "sell",
 				"size": qty,
-				"limitPrice":round( prc+(1/4),0),
+				"limitPrice":round( prc+(1/2),0),
 				"reduceOnly": "false"
 				}
 
 				mod = open_qty%qty
 				edit = {
-				"limitPrice": ask_prc,
+				"limitPrice": ask_prc,#+(1/2),
 				"size": qty-mod,
+				"orderId": oid,
+                }
+
+				edit2 = {
+				"limitPrice": max(ask_prc,round(prc,0)),#+(1/2),
+				"orderId": oid,
+				"size": qty,
 				}
 
 				if prc !=0 and place_asks == True:
@@ -509,26 +542,32 @@ class MarketMaker(object):
 					elif deri_test == 0:
 						cfPrivate.send_order_1(limit_order)
 					else:
-						sleep(1)
+						print('')
 
-				if open_time > 100 :# and api ==True:
+				print(sub_name,fut,'ask',ask_vs_open_prc,'bid', bid_vs_open_prc)
+				if ask_vs_open_prc == True :# and api ==True:
 
-					if deri_test == 1 and open_api==True:
+					if deri_test == 1 and open_api==True and open_qty!=0 and oid !=0:
 
-						client_trading.private_cancel_get( oid )
-					elif deri_test == 0 and open_time>100000 and mod==0:
+						try:
+							client_trading.private_cancel_get( oid )
+						except:
+							print('')
+					elif deri_test == 0 and mod==0 or open_qty>1 :
+
+                            #cfPrivate.cancel_order(oid)
 
 						cfPrivate.cancel_order(oid)
 
 					elif deri_test==  0 and  mod !=0 and place_asks==True:
 
 						cfPrivate.edit_order(edit)
-						print(cfPrivate.edit_order(edit))
+						print('edit',fut,cfPrivate.edit_order(edit))
 					else:
-						sleep(1)
+						print('')
 
 				counter= get_time - (stop_unix/1000)
-				if counter > (15):
+				if counter >35:# if deri_test ==1 else 10:
 					while True:
 						self.restart_program()
 						break
@@ -578,7 +617,6 @@ class MarketMaker(object):
 		# Get all futures contracts
 		self.get_futures()
 		self.symbols = [BTC_SYMBOL] + list(self.futures.keys())
-#		self.symbols.sort()
 
 	def update_positions(self):
 
@@ -601,11 +639,11 @@ if __name__ == '__main__':
 		mmbot.run()
 	except(KeyboardInterrupt, SystemExit):
 		mmbot.report()
-#		print(traceback.format_exc())
+		print(traceback.format_exc())
 		sys.exit()
 	except:
 		mmbot.report()
-#		print(traceback.format_exc())
+		print(traceback.format_exc())
 		if args.restart:
 			mmbot.restart()
 
