@@ -18,7 +18,7 @@ from openapi_client.rest import ApiException
 import ssl
 import pandas as pd  
 #from pandas.io.json import json_normalize
-
+#ff
 try:
 	_create_unverified_https_context = ssl._create_unverified_context
 	
@@ -195,14 +195,16 @@ class MarketMaker(object):
 
 		self.futures_prv = cp.deepcopy(self.futures)
 
-		instsB = client_public.public_get_instruments_get(
-					currency='BTC', kind='future', expired='false')['result']
+##		instsB = client_public.public_get_instruments_get(
+#					currency='BTC', kind='future', expired='false')['result']
 
-		instsE = client_public.public_get_instruments_get(
-					currency='ETH', kind='future', expired='false')['result']
+#		instsE = client_public.public_get_instruments_get(
+#					currency='ETH', kind='future', expired='false')['result']
+		#instsB = client_market.public_get_book_summary_by_currency_get(currency='BTC', kind='future')['result']
+#
+#		instsE = client_market.public_get_book_summary_by_currency_get(currency='ETH', kind='future')['result']
 
-		self.futures = sort_by_key({i['instrument_name']: i for i in (
-					instsB+instsE) if i['kind'] == 'future'})
+#		self.futures = sort_by_key({i['instrument_name']: i for i in (instsB+instsE) })
 
 	def get_funding(self):
 		return client_private.private_get_account_summary_get(
@@ -232,7 +234,15 @@ class MarketMaker(object):
 		if self.monitor:
 			return None
 
+
+		instsB = client_market.public_get_book_summary_by_currency_get(currency='BTC', kind='future')['result']
+
+		instsE = client_market.public_get_book_summary_by_currency_get(currency='ETH', kind='future')['result']
+
+		self.futures = sort_by_key({i['instrument_name']: i for i in (instsB)})#+instsE) })
+
 		deri                    = list(self.futures.keys())
+
 #		instsCF                 = json.loads(cfPublic.getinstruments())['instruments']
 
 #		non_xbt_CF              = min ([ o['symbol'] for o in [ o for o in instsCF if o[
@@ -265,6 +275,7 @@ class MarketMaker(object):
 								#subattr=api,manual
 							
 			waktu           = datetime.now()
+
 			x = Symbol('x')
 			time_now        =(time.mktime(datetime.now().timetuple())*1000)
 			get_time        = client_public.public_get_time_get()['result']/1000
@@ -272,13 +283,49 @@ class MarketMaker(object):
 			#membagi deribit vs crypto facilities
 			deri_test       = 0 if (fut[:1] == 'p' or fut[:1]=='f') else 1
 
+						#memisahkan instrumen berdasarkan urutan jatuh tempo:perp/fut
+	
+		#inst        = 0 if deri_test ==0 else  (client_public.public_get_instruments_get(
+		#										currency=(fut[:3]), kind='future', expired='false')['result'])
+
+		#	stamp       = 0 if deri_test==0 else  max([o['creation_timestamp'] for o in [o for o in instsB ]])
+
+
+
+			#stamp       = 0 if deri_test==0 else  ([o['instrument_name'
+             #                               ] for o in [o for o in instsB if o['instrument_name'] ==stamp
+              #                                      ]])
+
+
+		#	stamp_new   = 0 if deri_test==0 else ( [ o['instrument_name'] for o in [o for o in instsB if o[
+		#										'creation_timestamp'] == stamp  ] ] )[0]
+
+
+			stamp       = 0 if deri_test==0 else  [o['instrument_name'
+                                            ]  for o in [o for o in instsB if  len(o[
+											'instrument_name'])==11 
+                                                    ]]
+			stamp_new=(  min( (stamp)[0],(stamp)[1]))
+
+
+			perp_test   =(1 if max(xbt_CF)==fut else 0) if deri_test ==0 else (1 if fut [-10:] == '-PERPETUAL' else 0)
+
+			fut_test_CF =0#( 1 if ( max(xbt_CF) != fut and min(xbt_CF) != fut) else 0 )
+			
+			fut_test    =fut_test_CF if deri_test==0 else (1 if stamp_new == fut  else 0)
+
+			#tahun=[o['instrument_name'] for o in [o for o in instsB if o max[]  ] ] )
+			
+#			int(str((instsB['instrument_name'])[-2:]))+int(str((datetime.strptime( (instsB['instrument_name'])[-5:][:3], '%b' ).month)))
+#			tahun=int(str((instsB['instrument_name'])[-2:]))+int(str((datetime.strptime( (instsB['instrument_name'])[-5:][:3], '%b' ).month)))
+
 			#mendapatkan atribut isi akun deribit vs crypto facilities
 
 			account_CF      =0#json.loads(cfPrivate.get_accounts())['accounts']['fi_xbtusd']		
 
 			account         = account_CF if deri_test == 0 else (
-											client_account.private_get_account_summary_get(
-											currency=(fut[:3]), extended='true')['result'])
+                                client_account.private_get_account_summary_get(
+                                        currency=(fut[:3]), extended='true')['result'])
 
 			#mendapatkan nama akun deribit vs crypto facilities
 			sub_name        = 'CF' if deri_test == 0 else account ['username']
@@ -287,7 +334,7 @@ class MarketMaker(object):
 			equity          = 0# account_CF['balances']['xbt']>0
 			
 			equity          =   equity if deri_test == 0 else ( account['equity'
-											] >0 and account ['currency']==fut [:3] )
+                                                                                    ] >0 and account ['currency']==fut [:3] )
 
 			funding         = 0#account_CF['auxiliary']['funding'
 								#            ]  if deri_test == 0 else account['session_funding']
@@ -295,7 +342,11 @@ class MarketMaker(object):
 			liqs_CF         =0# account_CF['triggerEstimates']['im']
 
 			#mendapatkan isi order book deribit vs crypto facilities 
-			ob              =   client_market.public_get_order_book_get(fut)['result']
+			
+			ob              =   client_market.public_ticker_get(fut)['result']
+			
+			#ob              =   client_market.public_get_order_book_get(fut)['result']
+
 			#json.loads(cfPublic.getorderbook(
 			 #                               fut.upper()))['orderBook'
 			  #                              ] if deri_test==0 else client_market.public_get_order_book_get(
@@ -303,6 +354,21 @@ class MarketMaker(object):
 	
 			bid_prc         = ob['best_bid_price'] if deri_test == 1 else ob ['bids'][0][0]
 			ask_prc         = ob ['best_ask_price'] if deri_test == 1 else ob ['asks'][0][0]
+
+			bid_prc_fut         = 0 if deri_test==0 else ( [ o['bid_price'] for o in [o for o in instsB if o[
+                            'instrument_name'] == stamp_new  ] ] )[0]
+			ask_prc_fut         = 0 if deri_test==0 else ( [ o['ask_price'] for o in [o for o in instsB if o[
+                            'instrument_name'] == stamp_new   ] ] )[0]
+
+			bid_prc_perp         = 0 if deri_test==0 else ( [ o['bid_price'] for o in [o for o in instsB if o[
+                            'instrument_name'][-10:] == '-PERPETUAL'  ] ] )[0]
+			ask_prc_perp         = 0 if deri_test==0 else ( [ o['ask_price'] for o in [o for o in instsB if o[
+                            'instrument_name'] [-10:]== '-PERPETUAL'  ] ] )[0]
+
+			print(fut,'bid_prc',bid_prc)
+			print(fut, 'ask_prc',bid_prc)
+			print(fut,'bid_prc_fut',bid_prc_fut,'ask_prc_fut',ask_prc_fut)
+			print(fut,'bid_prc_perp',bid_prc_perp,'bid_prc_perp',bid_prc_perp)
 
 			#mendapatkan transaksi terakhir deribit vs crypto facilities 
 			
@@ -368,7 +434,7 @@ class MarketMaker(object):
 				direction_CF = 'sell'
 
 			direction       = direction_CF if deri_test==0 else(
-											0 if hold_size==0 else position['direction'])
+                            0 if hold_size==0 else position['direction'])
 
 			#menentukan harga rata2 per posisi open 
 
@@ -453,14 +519,6 @@ class MarketMaker(object):
 			filledOrders_buy_prc    = filledOrders_buy_prc_CF if deri_test==0 else  (
 													0 if filledOrders_buy_prc ==[] else filledOrders_buy_prc [0])
 			
-			liqs_CF         	=0# account_CF['triggerEstimates']['im']
-
-			liqs            	= liqs_CF if deri_test == 0 else (
-													0 if self.positions[fut] ['size'
-													] == 0 else self.positions[fut]['estLiqPrice'] )
-
-			liqs_long       = False if hold_qty_net < 0 else(bid_prc-liqs)/bid_prc < 40/100
-			liqs_short      = False if hold_qty_net >0 else abs(liqs-ask_prc)/ask_prc < 40/100
 
 			#mendapatkan atribut open order deribit vs crypto facilities 
 
@@ -470,8 +528,8 @@ class MarketMaker(object):
 			openOrders_CF           = [] if openOrders_CF ==[] else openOrders_CF
 			
 			openOrders              = openOrders_CF if deri_test==0 else (
-													client_trading.private_get_open_orders_by_instrument_get (
-													instrument_name=fut)['result'])
+                            client_trading.private_get_open_orders_by_instrument_get (
+                                instrument_name=fut)['result'])
 			
 
 			#menentukan kuantitas per  open order per instrumen
@@ -634,66 +692,77 @@ class MarketMaker(object):
 			
 			cutloss_qty_sell = 0
 			cutloss_qty_buy = 0
-			
+
+			ob1              =   client_market.public_get_book_summary_by_currency_get(currency='BTC', kind='future')['result']
+
+			#cutloss_ask_prc
+			#hold_sell_qty	= 0 if deri_test ==0 else  sum([o['ask_price'] for o in [o for o in ob1   if o['direction'] == 'sell' and  o['instrument_name']==fut]])
+
 			#qty di tangan
+			print(positions)
 			hold_buy_qty_cl	= 0 if deri_test ==0 else  sum([o['size'] for o in [
                             o for o in positions if o['direction'] == 'buy' ]])
 
 			hold_sell_qty_cl    = 0 if deri_test ==0 else  sum([o['size'] for o in [
                             o for o in positions  if o['direction'] == 'sell' ]])
-			
+
+			#prc average
+			hold_buy_avg_prc_cl	= 0 if deri_test ==0 else  sum([o['average_price'] for o in [
+                            o for o in positions if o['direction'] == 'buy' ]])
+
+			hold_sell_avg_prc_cl    = 0 if deri_test ==0 else  sum([o['average_price'] for o in [
+                            o for o in positions  if o['direction'] == 'sell' ]])
+
 			#qty untuk posisi lawan (min 2 kali posisi nyangkut)
-			cutloss_qty_sell = hold_sell_qty_cl * 2
-			cutloss_qty_buy = hold_buy_qty_cl * 2
+			print(fut,'hold_buy_qty_cl',hold_buy_qty_cl,'hold_sell_qty_cl',hold_sell_qty_cl)
+			cutloss_qty_sell = abs(hold_sell_qty_cl) * 2
+			print(fut,cutloss_qty_sell)
+			cutloss_qty_buy = abs(hold_buy_qty_cl * 2)
+			print(fut,cutloss_qty_buy)
 
 			#A. Kapan mulai cutloss: threshold = margin/5
 
-			cutloss_prc_sell_test = 1 if (ask_prc > (hold_avg_prc_sell + (
-                            hold_avg_prc_sell*margin/5)) and hold_sell_qty_cl >0 ) else 0
+			cutloss_prc_sell_test = 1 if (ask_prc > (hold_sell_avg_prc_cl + (
+                            hold_sell_avg_prc_cl*margin/5)) and hold_sell_qty_cl <0 ) else 0
+			print(fut,'ask_prc',ask_prc, 'hold_sell_avg_prc_cl',hold_sell_avg_prc_cl,'ask_prc >',ask_prc > (hold_avg_prc_sell + (
+                            hold_sell_avg_prc_cl*margin/5)),hold_sell_qty_cl)
 			
-			cutloss_prc_buy_test = 1 if ( (hold_avg_prc_sell - (
-                            hold_avg_prc_sell*margin/5)) > bid_prc and hold_buy_qty_cl >0 ) else 0
+			cutloss_prc_buy_test = 1 if ( (hold_buy_avg_prc_cl - (
+                            hold_buy_avg_prc_cl*margin/5)) > bid_prc and hold_buy_qty_cl >0 ) else 0
+
+			print(fut,'bid_prc',bid_prc, 'hold_buy_avg_prc_cl',hold_buy_avg_prc_cl,'bid_prc >',(hold_avg_prc_buy - (
+                            hold_avg_prc_buy*margin/5)),hold_buy_qty_cl)
 
 			#cutloss_formula/target harga
-			cutloss_prc_buy_delta=(hold_buy_qty_cl/(x if cutloss_prc_sell_test == 1 else ask_prc))-(
-                                hold_buy_qty_cl/1 if hold_avg_prc_buy == 0 else hold_avg_prc_buy)
+			cutloss_prc_buy_delta=0 if (hold_buy_qty_cl ==0 or hold_sell_qty_cl ==0 ) else (
+                                hold_buy_qty_cl/(x if cutloss_prc_sell_test == 1 else ask_prc))-(
+                                hold_buy_qty_cl/1 if hold_buy_avg_prc_cl == 0 else hold_buy_avg_prc_cl)
 			
-			cutloss_prc_sell_delta=(hold_sell_qty_cl/1 if hold_avg_prc_sell ==0 else hold_avg_prc_sell
-                                )-(hold_sell_qty_cl/(x if cutloss_prc_buy_test == 1 else bid_prc))
+			cutloss_prc_sell_delta=0 if (hold_buy_qty_cl ==0 or hold_sell_qty_cl ==0)  else(
+                                abs(hold_sell_qty_cl)/1 if hold_sell_avg_prc_cl ==0 else hold_sell_avg_prc_cl
+                                )-(abs(hold_sell_qty_cl)/(x if cutloss_prc_buy_test == 1 else bid_prc))
 
 			#cutloss_sell	    : posisi sell yang salah		
 			#tidak boleh jalan kalau qty lawan masih 0			
 
-			if cutloss_prc_sell_test == 1 and hold_buy_qty_cl >0:
-				cutloss_prc_sell=solve (( (cutloss_prc_buy_delta) * hold_buy_qty_cl + (
-                                        cutloss_prc_sell_delta) *hold_sell_qty_cl, (x) ) )[0]
-			
+			print(fut,'cutloss_prc_sell_test',cutloss_prc_sell_test,'cutloss_prc_sell',cutloss_prc_sell)
+			print(fut,'cutloss_prc_buy_test',cutloss_prc_buy_test,'cutloss_prc_buy_test',cutloss_prc_buy_test)
+			print(fut,'cutloss_prc_buy_delta',cutloss_prc_buy_delta,'hold_buy_qty_cl',hold_buy_qty_cl,'cutloss_prc_sell_delta',
+                              cutloss_prc_sell_delta,'hold_sell_qty_cl',hold_sell_qty_cl)
+
+			if cutloss_prc_sell_test == 1 and hold_buy_qty_cl >0  and cutloss_prc_buy_test !=1 :
+				cutloss_prc_sell=(solve (( cutloss_prc_buy_delta) * hold_buy_qty_cl + (
+                                        cutloss_prc_sell_delta) * abs(hold_sell_qty_cl), (x) ) )[0]
 				
 			#cutloss_buy	    : posisi buy yang salah		
-			elif cutloss_prc_buy_test == 1 and hold_sell_qty_cl >0 :
+			elif cutloss_prc_buy_test == 1 and hold_sell_qty_cl <0 and cutloss_prc_sell_test !=1:
 				cutloss_prc_buy=solve(( (cutloss_prc_buy_delta) * hold_buy_qty_cl + (
-                                        cutloss_prc_sell_delta) *hold_sell_qty_cl, (x)))[0]
-			
+                                        cutloss_prc_sell_delta) * abs(hold_sell_qty_cl), (x)))[0]
 
-			print('cutloss_prc_sell_test',cutloss_prc_sell_test,'cutloss_prc_sell',cutloss_prc_sell)
-			print('cutloss_prc_buy_test',cutloss_prc_buy_test,'cutloss_prc_buy_test',cutloss_prc_buy_test)
+			print(fut,'cutloss_PRC_sell',cutloss_prc_sell,'cutloss_PRC_buy',cutloss_prc_buy)
+
+			
 			for i in range(max(nbids, nasks)):
-				#memisahkan instrumen berdasarkan urutan jatuh tempo:perp/fut
-	
-				inst        = 0 if deri_test ==0 else  (client_public.public_get_instruments_get(
-												currency=(fut[:3]), kind='future', expired='false')['result'])
-
-				stamp       = 0 if deri_test==0 else  max([o['creation_timestamp'] for o in [o for o in inst ]])
-
-				stamp_new   = 0 if deri_test==0 else ( [ o['instrument_name'] for o in [o for o in inst if o[
-												'creation_timestamp'] == stamp  ] ] )[0]
-
-				perp_test   =(1 if max(xbt_CF)==fut else 0) if deri_test ==0 else (
-												1 if fut [-10:] == '-PERPETUAL' else 0)
-
-				fut_test_CF =0#( 1 if ( max(xbt_CF) != fut and min(xbt_CF) != fut) else 0 )
-			
-				fut_test    =fut_test_CF if deri_test==0 else (1 if stamp_new == fut  else 0)
 
 				#PILIHAN INSTRUMEN
 				#perpetual= diarahkan posisi sell karena funding cenderung berada di sell
@@ -731,14 +800,15 @@ class MarketMaker(object):
 										#openOrders_buy_qty_stop <10 = hanya boleh ada 1 posisi stop limit per 5 menit
 										#openenOrders_buy_qty==0
 											
-						prc=   openOrders_sell_prc_limit-(delta_prc if fut [:3]=='BTC' else .05)
+						prc=   openOrders_sell_prc_limit-(delta_prc * openOrders_sell_prc_limit)
 						stop_prc_perp=   max( ask_prc,( float(openOrders_sell_prc_limit+(0.5 if fut [:3]=='BTC' else .05) ) ) )
 						print(fut,'stop_prc_perp',stop_prc_perp)
-						print(fut,'prc',prc)
+						print(fut,'prc',prc,'delta_prc',delta_prc)
 						print(fut,'openOrders_buy_qty',openOrders_buy_qty)
 						print(fut,'hold_qty_total_net',hold_qty_total_net)
 						print(fut,'hold_buy_qty',hold_buy_qty)
 
+						print(fut, ' BUY cutloss_qty_buy',cutloss_qty_buy)
 
 						if   perp_test==1 :
 
@@ -772,25 +842,25 @@ class MarketMaker(object):
                                                                     )	
 
 							#cutloss buy, perp jual laba untuk menutupi kerugian fut
-							elif cutloss_prc_buy_test ==1:                                                   
+							elif cutloss_prc_buy !=0:                                                   
 								client_trading.private_buy_get(
                                                                     instrument_name =fut,
                                                                     reduce_only     ='false',
                                                                     type            ='limit',
                                                                     price           =cutloss_prc_buy,
                                                                     post_only       ='true',
-                                                                    amount          =hold_sell_qty_cl
+                                                                    amount          =abs(hold_sell_qty_cl)
                                                                     )	
 
 							#cutloss sell, jual rugi perp kesangkut pada target prc
-							elif cutloss_prc_sell_test ==1:                                                   
+							elif cutloss_prc_buy !=0:                                                   
 								client_trading.private_buy_get(
                                                                     instrument_name =fut,
                                                                     reduce_only     ='false',
                                                                     type            ='limit',
                                                                     price           =cutloss_prc_sell,
                                                                     post_only       ='true',
-                                                                    amount          =hold_sell_qty_cl
+                                                                    amount          =abs(hold_sell_qty_cl)
                                                                     )	
 
 
@@ -809,14 +879,14 @@ class MarketMaker(object):
                                                                     )		
 
 							#cutloss sell, beli 2 kali qty perp pada harga mkt
-							elif cutloss_prc_sell_test == 1 :                                                   
+							elif cutloss_prc_sell_test ==1 and abs(hold_buy_qty_cl/hold_sell_qty_cl)<2:                                                   
 								client_trading.private_buy_get(
                                                                     instrument_name =fut,
                                                                     reduce_only     ='false',
                                                                     type            ='limit',
                                                                     price           =bid_prc,
                                                                     post_only       ='true',
-                                                                    amount          =cutloss_qty_buy
+                                                                    amount          =cutloss_qty_sell
                                                                     )	
 							
 					elif deri_test == 0:
@@ -830,9 +900,9 @@ class MarketMaker(object):
 											
 			
 						stop_prc_fut=   min( bid_prc,float (openOrders_buy_prc_limit-(0.5 if fut [:3]=='BTC' else .05) ) )
-						prc=   openOrders_buy_prc_limit+(delta_prc if fut [:3]=='BTC' else .05)
+						prc=   openOrders_buy_prc_limit+(delta_prc * openOrders_buy_prc_limit)
 						print(fut,'stop_prc_fut',stop_prc_fut)
-						print(fut,'prc',prc)
+						print(fut,'prc',prc,'delta_prc',delta_prc)
 						print('hold_qty_total_net',hold_qty_total_net)
 
 						print(fut,'openOrders_sell_qty',openOrders_sell_qty)
@@ -876,7 +946,8 @@ class MarketMaker(object):
                                                                     type='limit',
                                                                     price=cutloss_prc_sell,
                                                                     post_only='true',
-                                                                    amount=hold_sell_qty_cl)	
+                                                                    amount=abs(hold_buy_qty_cl)
+                                                                    )	
 
 							#cutloss buy, jual fut rugi pada harga target price
 							elif cutloss_prc_sell !=0:                                                   
@@ -886,7 +957,7 @@ class MarketMaker(object):
                                                                     type            ='limit',
                                                                     price           =cutloss_prc_buy,
                                                                     post_only       ='true',
-                                                                    amount          =qty)	
+                                                                    amount          =abs(hold_buy_qty_cl))	
 	   
 					
 						elif   perp_test==1 and openOrders_sell_qty == 0 :
@@ -904,7 +975,7 @@ class MarketMaker(object):
                                                                     )	
 
 							#cutloss buy, beli 2 kali qty fut pada harga mkt                                                   
-							if  cutloss_prc_sell !=0:							
+							if  cutloss_prc_buy_test ==1 and abs(hold_sell_qty_cl/hold_buy_qty_cl)<2:							
 								client_trading.private_sell_get(
                                                                     instrument_name=fut,
                                                                     reduce_only='false',
@@ -942,7 +1013,8 @@ class MarketMaker(object):
 #						cfPrivate.cancel_order(oid)
 
 
-				if open_time >280:# and api ==True:
+				print(fut,'open_time',open_time,'openOrders_buy_oid_stopLimit',openOrders_buy_oid_stopLimit,'openOrders_sell_oid_stopLimit',openOrders_sell_oid_stopLimit) # and api ==True:
+				if open_time >180:# and api ==True:
 					if deri_test == 1 :
 						#openOrders_sell_oid_limit  !=0 = mengecek open order sudah tereksekusi/belum							
 						if  perp_test==1 and openOrders_buy_oid_stopLimit  !=0:							
@@ -965,7 +1037,7 @@ class MarketMaker(object):
 						break
 
 
-	positions       =client_account.private_get_positions_get(currency='BTC', kind='future')['result']
+#	positions       =client_account.private_get_positions_get(currency='BTC', kind='future')['result']
 	def restart_program(self):
 
 		python = sys.executable
@@ -1059,5 +1131,4 @@ if __name__ == '__main__':
 		print(traceback.format_exc())
 		if args.restart:
 			mmbot.restart()
-
 
