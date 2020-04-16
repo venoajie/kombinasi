@@ -1,9 +1,10 @@
 
+
 from collections import OrderedDict
 
 import os
 import sys
-import logging, math
+import logging#, math
 import time
 from time import sleep
 from datetime import datetime, timedelta
@@ -26,6 +27,7 @@ import ssl
 print((f"  AAD1  {datetime.now()} "))
 
 import pandas as pd  
+
 print((f"  AAD2  {datetime.now()} "))
 
 import numpy as np
@@ -35,7 +37,6 @@ import  json
 print((f"  AAD4  {datetime.now()} "))
 
 from functools import lru_cache
-
 
 TEST=0
 
@@ -112,7 +113,7 @@ deribitauthurl = "https://deribit.com/api/v2/public/auth"
 
 #PARAMS = {'client_id': key, 'client_secret': secret, 'grant_type': 'client_credentials'}
 
-#data = requests.get(url=deribitauthurl, params=PARAMS).json()
+#data = s.get(url=deribitauthurl, params=PARAMS).json()
 
 #accesstoken = data['result']['access_token']
 
@@ -159,8 +160,8 @@ parser.add_argument('--no-restart',
 args = parser.parse_args()
 
 
-MARGIN      = 1/100
-DELTA_PRC	=  MARGIN/20
+one_pct       = 1/100
+DELTA_PRC	=  one_pct /20
 IDLE_TIME   = 600 #nggak jalan?
 LOG_LEVEL   = logging.INFO
 INTERVAL	= 3 #5 minutes
@@ -176,7 +177,7 @@ BOLD    	= "\033[;1m"
 REVERSE 	= "\033[;7m"
 ENDC 		= '\033[m' # 
 
-
+s = requests.Session()
 TEST=TEST+1
 print((f"  E {TEST} {datetime.now()} "))
 
@@ -211,7 +212,7 @@ def telegram_bot_sendtext(bot_message):
 								'/sendMessage?chat_id=') + bot_chatID + (
 							'&parse_mode=Markdown&text=') + bot_message
 
-	response    = requests.get(send_text)
+	response    = s.get(send_text)
 
 	return response.json()
 print((f"  F{TEST} {datetime.now()} "))
@@ -301,9 +302,9 @@ class MarketMaker(object):
 		}
 
 		
-		df = pd.DataFrame(requests.get(endpoint, params=params).json()['result']).tail(50) 
+		df = pd.DataFrame(s.get(endpoint, params=params).json()['result']).tail(50) 
 
-		columns_to_delete = ['open', 'high','low','cost','volume','status']
+		columns_to_delete = ['open', 'cost','volume','status']
 		
 		df.drop(columns_to_delete, inplace=True, axis=1)
 
@@ -319,19 +320,21 @@ class MarketMaker(object):
 	def DF_XRP(self,endpoint):  # Get all current futures instruments
 
 
-		df_xrp			= 	pd.DataFrame((requests.get(endpoint).json()['result']['XXRPXXBT'])).tail(50) 
+		df_xrp			= 	pd.DataFrame((s.get(endpoint).json()['result']['XXRPXXBT'])).tail(50) 
 		
 		df_xrp 			= 	df_xrp.rename(columns={
 							0: 'ticks',1: 'open',2: 'high',3: 'low',
-							4: 'close_fl',5: 'vwap',6: 'volume',7: 'count' })
+							4: 'close',5: 'vwap',6: 'volume',7: 'count' })
 		
-		columns_to_delete = ['open', 'high','low','vwap','volume','count']
+		columns_to_delete = ['open', 'vwap','volume','count']
 		
 		df_xrp.drop(columns_to_delete, inplace=True, axis=1)
 		
 		df_xrp['ticks']	=	pd.to_datetime(df_xrp['ticks'],unit='s')
 
-		df_xrp['close']	=	pd.Series((df_xrp['close_fl'])).astype(float)*XRP_ROUND
+		df_xrp['close']	=	pd.Series((df_xrp['close'])).astype(float)*XRP_ROUND
+		df_xrp['high']	=	pd.Series((df_xrp['high'])).astype(float)*XRP_ROUND
+		df_xrp['low']	=	pd.Series((df_xrp['low'])).astype(float)*XRP_ROUND
 
 		return df_xrp
 
@@ -360,6 +363,73 @@ class MarketMaker(object):
 			
 		return hma #https://github.com/kylejusticemagnuson/pyti/blob/master/pyti/hull_moving_average.py
 
+
+
+	#Relative Strength Index  
+	def RSI(self, df, column="close", period=14):
+		
+		delta = df[column].diff()
+		up, down = delta.copy(), delta.copy()
+
+		up[up < 0] = 0
+		down[down > 0] = 0
+
+		rUp = up.ewm(com=period - 1,  adjust=False).mean()
+		rDown = down.ewm(com=period - 1, adjust=False).mean().abs()
+
+		df ['RSI']= 100 - 100 / (1 + rUp / rDown)    
+
+		return
+	#Average True Range  
+	def ATR(self,df,n): #df is the DataFrame, n is the period 7,14 ,etc
+		df['H-L']=abs(df['high']-df['low'])
+		df['H-PC']=abs(df['high']-df['close'].shift(1))
+		df['L-PC']=abs(df['low']-df['close'].shift(1))
+		df['TR']=df[['H-L','H-PC','L-PC']].max(axis=1)
+		df['ATR']=np.nan
+		df.loc[n-1,'ATR']=df['TR'][:n-1].mean()
+		for i in range(n,len(df)):
+		#	df['ATR'][i]=(df['ATR'][i-1]*(n-1)+ df['TR'][i])/n
+			df.loc[i, 'ATR'] = (df.loc[i - 1, 'ATR'] * (n -1) + df.loc[i, 'TR']) / n
+
+		return 
+		#print (ATR,df,14)
+
+	def SMAATR(self,df, column="ATR", period=20):
+		
+		df['SMAATR'] = df[column].rolling(window=period, min_periods=period - 1).mean()
+		return
+
+
+	#Bollinger Bands  
+	def BBANDS(self,df, n):  
+		MA = pd.Series(pd.rolling_mean(df['close'], n))  
+		MSD = pd.Series(pd.rolling_std(df['close'], n))  
+		b1 = 4 * MSD / MA  
+		B1 = pd.Series(b1, name = 'BollingerB_' + str(n))  
+		df = df.join(B1)  
+		b2 = (df['close'] - MA + 2 * MSD) / (4 * MSD)  
+		B2 = pd.Series(b2, name = 'Bollinger%b_' + str(n))  
+		df = df.join(B2)  
+		return df
+
+	#Pivot Points, Supports and Resistances  
+	def PPSR(self,df):  
+		PP = pd.Series((df['high'] + df['low'] + df['close']) / 3)  
+		R1 = pd.Series(2 * PP - df['low'])  
+		S1 = pd.Series(2 * PP - df['high'])  
+		R2 = pd.Series(PP + df['high'] - df['low'])  
+		S2 = pd.Series(PP - df['high'] + df['low'])  
+		R3 = pd.Series(df['high'] + 2 * (PP - df['low']))  
+		S3 = pd.Series(df['low'] - 2 * (df['high'] - PP))  
+		psr = {'PP':PP, 'R1':R1, 'S1':S1, 'R2':R2, 'S2':S2, 'R3':R3, 'S3':S3}  
+		PSR = pd.DataFrame(psr)  
+		df = df.join(PSR)  
+		return df
+
+
+#https://www.quantopian.com/posts/technical-analysis-indicators-without-talib-code
+
 	@lru_cache(maxsize=None)
 	def filledOrder_cf(self,contract ):
     						
@@ -379,9 +449,26 @@ class MarketMaker(object):
 		return  json.loads(cfPrivate.get_accounts())['accounts']['fi_xbtusd']
 
 	@lru_cache(maxsize=None)
+	def position_CF(self ):
+    						
+		return  json.loads(cfPrivate.get_openpositions())['openPositions']
+
+
+
+	@lru_cache(maxsize=None)
+	def openOrders_CF(self ):
+    						
+		return  json.loads(cfPrivate.get_openorders())['openOrders'] 
+
+	@lru_cache(maxsize=None)
 	def get_instruments_CF(self ):
     						
 		return  json.loads(cfPublic.getinstruments())['instruments']
+
+	@lru_cache(maxsize=None)
+	def get_tickers_CF(self ):
+    						
+		return  json.loads(cfPrivate.get_tickers())['tickers']
 
 #	def filledOrder_drbt(self,contract ):
 
@@ -456,8 +543,15 @@ class MarketMaker(object):
 	TEST=TEST+1
 	print((f" 8 {TEST}{datetime.now()}"))
 
-	#@lru_cache(maxsize=None)
-	def place_orders(self):				
+
+	def truncate(self,f, n):
+		'''Truncates/pads a float f to n decimal places without rounding'''
+		s = '%.12f' % f
+		i, p, d = s.partition('.')
+		return '.'.join([i, (d+'0'*n)[:n]])
+#https://stackoverflow.com/questions/783897/truncating-floats-in-python
+
+	def place_orders(self):					
 	
 #		get_instruments_drbt			=	self.book_summary_drbt('BTC')
 
@@ -496,7 +590,9 @@ class MarketMaker(object):
 
 		instruments_list_ori= list( xbt_perp + xbt_fut+ xbt_fut_min+xrp_perp + xrp_fut  )
 		tickers=json.loads(cfPrivate.get_tickers())
+
 		tickers=tickers['tickers']
+
 		serverTime=json.loads(cfPrivate.get_tickers())['serverTime']
 
 #FIXME: 
@@ -505,7 +601,7 @@ class MarketMaker(object):
 		instruments_list= list( ((xbt_fut)) + xbt_perp +  xrp_perp + xrp_fut  )
 		chck_key_list=['1','2','3','4','5','7']
 
-		instruments_list= instruments_list if chck_key in chck_key_list == True else  instruments_list[::-1]
+		instruments_list= instruments_list if chck_key in chck_key_list  else  instruments_list[::-1]
 
 					#mendapatkan atribut isi akun deribit vs crypto facilities			
 
@@ -514,7 +610,7 @@ class MarketMaker(object):
 #FIXME: 
 		print((f" 8CB {TEST}{datetime.now()} "))
 
-		openOrders_CF				=	 json.loads(cfPrivate.get_openorders())['openOrders']  
+		openOrders_CF				=	 self.openOrders_CF()
 		
 #FIXME: 
 		print((f" 8CC {TEST}{datetime.now()} "))
@@ -523,26 +619,17 @@ class MarketMaker(object):
 		print((f" 8D {TEST}{datetime.now()} "))
 
 		try:
-			position_CF= json.loads(cfPrivate.get_openpositions(
-								))['openPositions']
+			position_CF= self.position_CF()
+
 		except:
 			position_CF=0
 	
+		tickers_xbt_perp			= self.filter_one_var(tickers,'markPrice','symbol',xbt_perp[0],list )
+		tickers_xbt_fut			= self.filter_one_var(tickers,'markPrice','symbol',xbt_fut[0],list )
+		tickers_xbt_fut_min			= self.filter_one_var(tickers,'markPrice','symbol',xbt_fut_min[0],list )
+		tickers_xrp_perp			= self.filter_one_var(tickers,'markPrice','symbol',xrp_perp[0],list )
+		tickers_xrp_fut			= self.filter_one_var(tickers,'markPrice','symbol',xrp_fut[0],list )
 
-		tickers_xbt_perp			= [ o['markPrice'] for o in[o for o in tickers if (
-							o['symbol']==xbt_perp[0] )  ]]
-
-		tickers_xbt_fut			= [ o['markPrice'] for o in[o for o in tickers if (
-							o['symbol']==xbt_fut[0] )  ]]       
-
-		tickers_xbt_fut_min			= [ o['markPrice'] for o in[o for o in tickers if (
-							o['symbol']==xbt_fut_min[0] )  ]]
-
-		tickers_xrp_perp			= [ o['markPrice'] for o in[o for o in tickers if (
-							o['symbol']==xrp_perp[0] )  ]]
-
-		tickers_xrp_fut			= [ o['markPrice'] for o in[o for o in tickers if (
-							o['symbol']==xrp_fut[0] )  ]]
 		print((f" 8E {TEST}{datetime.now()} "))
 
 		open_xbt_perp			= [sum( [ o['unfilledSize'] for o in[
@@ -596,13 +683,6 @@ class MarketMaker(object):
 		open_instrument_len= list( open_xbt_perp_len + open_xbt_fut_len+ open_xbt_fut_min_len+open_xrp_perp_len + open_xrp_fut_len  )
 		tickers_instrument= list( tickers_xbt_perp + tickers_xbt_fut+ tickers_xbt_fut_min+tickers_xrp_perp + tickers_xrp_fut  )
 
-		qty_pos=(([o['size'] for o in [o for o in position_CF  ]]))
-
-		side_pos=(([o['side'] for o in [o for o in position_CF  ]])) 
-		prc_pos=(([int(o['price']) for o in [o for o in position_CF  ]])) 
-		liq=account_CF['triggerEstimates']['lt']
-		bal=account_CF['balances']['xbt']
-
 		#instruments_list= (list((  deri)))#deri + xbt_CF + y) ))      
 
 		TEST=TEST+1
@@ -617,13 +697,14 @@ class MarketMaker(object):
 			#mendapatkan nama akun deribit vs crypto facilities
 			sub_name        = 'CF' if deri_test == 0 else account ['username']#deri + xbt_CF + y) ))
 
-			QTY         = 20 if fut=='pi_xbtusd' else 20#	
-			nbids		=	2
-			nasks		=	2
+			QTY         = 10 if fut=='pi_xbtusd' else 10#	
+			nbids		=	1
+			nasks		=	1
+			nbids		=	5 if fut[3:][:3]=='xrp'else nbids
+			nasks		=	5 if fut[3:][:3]=='xrp'else nasks
 			FREQ 		= 10
 			FREQ		=	FREQ -	max(nasks,nbids)
-			QTY         = 20 if fut[3:][:3]=='xrp'else QTY#
-			QTY			= int(QTY/8)
+			QTY         = 5 if fut[3:][:3]=='xrp'else 1#
 				
 			n			=10
 			IDLE_TIME	=600	
@@ -661,6 +742,7 @@ class MarketMaker(object):
 			curr    		= fut [3:][:3] #'xbt'/'xrp')
 			TICK			= ([o['tickSize']  for o in [o for o in get_instruments_CF if  
 								o['symbol']==fut]] [0]) if deri_test == 0 else (1/2)
+
 			filledOrder		=  [ o for o in [o for o in json.loads(cfPrivate.get_fills())[
 				'fills'] if o[instrument]==fut   ]]  #if deri_test == 0 else  self.filledOrder_drbt( fut ) 
 
@@ -709,9 +791,10 @@ class MarketMaker(object):
 			print((f" 9D{TEST}{datetime.now()} "))
 
 			#mendapatkan isi ekuitas deribit vs crypto facilities (ada/tidak collateral)
-			equity          = account_CF['balances']['xbt']>0
-			
-			equity          =   equity if deri_test == 0 else (
+			equity          = account_CF['balances']['xbt']
+			equity_test          = equity > 0
+
+			equity_test          =   equity_test if deri_test == 0 else (
 									account['equity'] >0 and account [
 										'currency']==fut [:3] )
 
@@ -906,7 +989,6 @@ class MarketMaker(object):
 
 			openOrders_qty_buy_limit  =  0 if openOrders_time_buy== [] else [ o[unfilledSize] for o in [
 					o for o in open_limit_time_buy ]] [0]
-
 			openOrders_qty_sell_limit_sum  = 0 if open_limit_sell== [] else sum ([ o[unfilledSize] for o in [
 					o for o in open_limit_sell]] )
 
@@ -963,38 +1045,56 @@ class MarketMaker(object):
 					filledOrders_sell_lastTime_conv if deri_test == 0 else (start_unix/1000- (
 						filledOrders_sell_lastTime)/1000))
 
+			IDLE_TIME=600
+			#FIXME:
+			QTY=int(round(sum([ o['last'] for o in[o for o in tickers if (
+							o['symbol']=='in_xbtusd') ]]) * equity *10/100))
+			
+			QTY         = QTY *2 if fut[3:][:3]=='xrp'else QTY
+
+
+
+			if  perp_test == True and abs(hold_qty_sell) <  (QTY * 4):
+				QTY = int(round(QTY * 3/2)) 
+	
+			elif  fut_test == True and abs(hold_qty_buy) <  (QTY * 4):
+				QTY = int(round(QTY * 3/2)) 
+			else:
+				QTY = QTY
+			print(fut,QTY)
+
+
 			if  abs (hold_qty_sell) == QTY:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * MARGIN*20)
+				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *20)
 			elif  abs (hold_qty_sell) <= QTY*20:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * MARGIN*40)
+				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *40)
 			elif  abs (hold_qty_sell) <= QTY*40:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * MARGIN*80)
+				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *80)
 			elif  abs (hold_qty_sell) <= QTY*80:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * MARGIN*160)
+				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *160)
 			elif  abs (hold_qty_sell) <= QTY*160:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * MARGIN*320)
+				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *320)
 			elif  abs (hold_qty_sell) <= QTY*320:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * MARGIN*640)
+				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *640)
 			else:
 				IDLE_TIME = 0
 
 			if  abs (hold_qty_buy) == QTY:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * MARGIN*20)
+				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *20)
 			elif  abs (hold_qty_buy) <= QTY*20:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * MARGIN*40)
+				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *40)
 			elif  abs (hold_qty_buy) <= QTY*40:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * MARGIN*80)
+				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *80)
 			elif  abs (hold_qty_buy) <= QTY*80:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * MARGIN*160)
+				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *160)
 			elif  abs (hold_qty_buy) <= QTY*160:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * MARGIN*320)
+				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *320)
 			elif  abs (hold_qty_buy) <= QTY*320:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * MARGIN*640)
+				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *640)
 			else:
 				IDLE_TIME = 0
 						#batasan transaksi
 
-			IDLE_TIME=480
 			 
 			delta_time_buy= max (filled_time_buy,open_time_buy)  if (
 				filled_time_buy == 0 or open_time_buy ==0) else min (
@@ -1003,6 +1103,16 @@ class MarketMaker(object):
 			delta_time_sell= max (filled_time_sell,open_time_sell) if (
 				filled_time_sell ==0 or open_time_sell==0) else min (
 					filled_time_sell,open_time_sell)
+
+			IDLE_TIME = (IDLE_TIME*2/3) if (hold_qty_buy < 10 )else IDLE_TIME
+			IDLE_TIME = (IDLE_TIME*2/3) if  abs(hold_qty_sell) < 10  else IDLE_TIME
+
+
+			
+			print(fut,datetime.now(),'delta_time_buy',delta_time_buy,'delta_time_sell',delta_time_sell,'IDLE_TIME',IDLE_TIME)
+			print(fut,'filled_time_buy',filled_time_buy,'open_time_buy',open_time_buy)
+			print(fut,'filled_time_sell',filled_time_sell,'open_time_sell',open_time_sell)
+			print(fut,'hold_qty_buy < 10',hold_qty_buy < 10,'abs(hold_qty_sell < 10)',abs(hold_qty_sell) < 10,(hold_qty_buy < 10 or abs(hold_qty_sell) < 10)==True )
 
 #FIXME:
 
@@ -1033,13 +1143,18 @@ class MarketMaker(object):
 
 			bid_oke=False
 			ask_oke=False
+			test_time_fut=False
+			test_time_perp =False
 
 			if test_time_fut ==True or test_time_perp == True:
 
 				end_point_btc='https://www.deribit.com/api/v2/public/get_tradingview_chart_data'
-				endpoint_xrp='https://api.kraken.com/0/public/OHLC?pair=xxrpxxbt&interval=5' 
+				endpoint_xrp='https://api.kraken.com/0/public/OHLC?pair=xxrpxxbt&interval=15' 
 				
 				df				=	self.DF(end_point_btc) if curr =='xbt' else self.DF_XRP(endpoint_xrp)
+
+				df=pd.DataFrame(df,self.RSI(df))
+				RSI			=abs((df['RSI'].tail(1).values.tolist() [0]) )
 
 				print((f" 12AA {TEST}{datetime.now()} "))
 		
@@ -1053,25 +1168,25 @@ class MarketMaker(object):
 				hma_net			=int(df['up'].tail(1).values.tolist() [0]) 
 				print((f" 12A {TEST}{datetime.now()} "))
 				
-				bid_oke			=True if hma_net > (1 if curr =='xbt' else  0) else False
-				ask_oke			=True if hma_net < (-1 if curr =='xbt' else  0) else False
+				bid_oke			=True if (RSI <41 ) else False
+				ask_oke			=True if (RSI > 59 )else False
 				print((f" 12B {TEST}{datetime.now()} "))
 
 				hma_prc_buy		=	( abs(hma_net)  if curr =='xbt' else abs(hma_net)/XRP_ROUND )   if bid_oke==True else 0
 				hma_prc_sell	= 	( abs(hma_net)   if curr =='xbt' else abs(hma_net)/XRP_ROUND )  if ask_oke==True else 0
 
-
 			qty_imbal_perp 		=	abs(hold_qty_sell) -  openOrders_qty_buy_limit_sum  #4 menjamin order sell maks = order buy
 			qty_imbal_fut 	=	abs(hold_qty_buy) -  openOrders_qty_sell_limit_sum  #4 menjamin order sell maks = order buy
 			bid_prc=0
 			ask_prc=0
-
+			test_time_fut	=delta_time_buy > IDLE_TIME
+			test_time_perp=delta_time_sell > IDLE_TIME
 				
-			if bid_oke ==True  or qty_imbal_perp !=0:
+			if test_time_fut ==True  or qty_imbal_perp !=0 or delta_time_buy ==0 or test_qty_zero_fut == True:
 				bid_prc         = ord_book['ask'] - TICK
 				
-			if ask_oke ==True or qty_imbal_fut !=0  :
-				ask_prc         = ord_book['ask'] - TICK
+			if test_time_perp ==True or qty_imbal_fut !=0  or delta_time_sell ==0 or test_qty_zero_perp ==True:
+				ask_prc         = ord_book['bid'] + TICK
 			
 			print((f" bid_oke {bid_oke} ask_oke {ask_oke} "))
 
@@ -1085,28 +1200,28 @@ class MarketMaker(object):
 
 			if ((abs(openOrders_qty_sell_limit_sum) ) > hold_qty_buy) and fut_test==1 and hold_qty_buy != 0:
 				
-				if openOrders_oid_sell_limit  !=0: #openOrders_oid_sell_limit  !=0 = mengecek open order sudah tereksekusi/belum	
+				if openOrders_oid_sell_limit  !=0:	
 	
-					print(BLUE + str((fut,'222',cfPrivate.cancel_order(openOrders_oid_sell_limit) if deri_test == 0 else (
+					print(BLUE + str((fut,'open > hold',cfPrivate.cancel_order(openOrders_oid_sell_limit) if deri_test == 0 else (
 						client_trading.private_cancel_get(openOrders_oid_sell_limit)))),ENDC)
 
 			if ((abs(openOrders_qty_buy_limit_sum) ) > abs(hold_qty_sell)) and perp_test==1 and hold_qty_sell != 0:
 
-				if openOrders_oid_buy_limit  !=0:#openOrders_oid_sell_limit  !=0 = mengecek open order sudah tereksekusi/belum							
+				if openOrders_oid_buy_limit  !=0:						
 	
-					print(BLUE + str((fut,'333',cfPrivate.cancel_order(openOrders_oid_buy_limit) if deri_test == 0 else (
+					print(BLUE + str((fut,'open > hold',cfPrivate.cancel_order(openOrders_oid_buy_limit) if deri_test == 0 else (
 						client_trading.private_cancel_get(openOrders_oid_buy_limit)))),ENDC)
 
-			if  (fut_test==1 and open_time_buy >IDLE_TIME/4) or (perp_test==1 and open_time_sell >IDLE_TIME/4) :# hanya berlaku bagi beli/jual, bukan lawan transaksi
+			if  (fut_test==1 and open_time_buy >IDLE_TIME/2) or (perp_test==1 and open_time_sell >IDLE_TIME/2) :# hanya berlaku bagi beli/jual, bukan lawan transaksi
 
 				if perp_test==1 and openOrders_oid_sell_limit != 0  : 													
 	
-					print(BLUE + str((fut,'444',cfPrivate.cancel_order(openOrders_oid_sell_limit) if deri_test == 0 else (
+					print(BLUE + str((fut,'open time > idle time',cfPrivate.cancel_order(openOrders_oid_sell_limit) if deri_test == 0 else (
 						client_trading.private_cancel_get(openOrders_oid_sell_limit)))),ENDC)
 
 				if fut_test==1  and openOrders_oid_buy_limit !=0:                                                   
 
-					print(BLUE + str((fut,'444B',cfPrivate.cancel_order(openOrders_oid_buy_limit) if deri_test == 0 else (
+					print(BLUE + str((fut,'open time > idle time',cfPrivate.cancel_order(openOrders_oid_buy_limit) if deri_test == 0 else (
 						client_trading.private_cancel_get(openOrders_oid_buy_limit)))),ENDC)
 
 
@@ -1120,25 +1235,25 @@ class MarketMaker(object):
 					
 					if  openOrders_oid_buy_limit_min != 0:
 						
-						print(BLUE + str((fut,'555',cfPrivate.cancel_order(openOrders_oid_buy_limit_min) if deri_test == 0 else (
+						print(BLUE + str((fut,'open qty > freq',openOrders_qty_buy_limitLen,cfPrivate.cancel_order(openOrders_oid_buy_limit_min) if deri_test == 0 else (
 						client_trading.private_cancel_get(openOrders_oid_buy_limit_min)))),ENDC)
 
 					if  openOrders_oid_buy_limitBal != 0:
 						
-						print(BLUE + str((fut,'555B',cfPrivate.cancel_order(openOrders_oid_buy_limitBal) if deri_test == 0 else (
+						print(BLUE + str((fut,'open qty > freq',openOrders_qty_buy_limitLen,cfPrivate.cancel_order(openOrders_oid_buy_limitBal) if deri_test == 0 else (
 						client_trading.private_cancel_get(openOrders_oid_buy_limitBal)))),ENDC)
 
 				if fut_test==1 : 													
 
 					if  openOrders_oid_sell_limit_min != 0 :
 						
-						print(BLUE + str((fut,'555C',cfPrivate.cancel_order(openOrders_oid_sell_limit_min) if deri_test == 0 else (
+						print(BLUE + str((fut,'open qty > freq',cfPrivate.cancel_order(openOrders_oid_sell_limit_min) if deri_test == 0 else (
 						client_trading.private_cancel_get(openOrders_oid_sell_limit_min)))),ENDC)
 
 															
 					if  openOrders_oid_sell_limitBal != 0 :
   						
-						print(BLUE + str((fut,'555D',cfPrivate.cancel_order(openOrders_oid_sell_limitBal) if deri_test == 0 else (
+						print(BLUE + str((fut,'open qty > freq',cfPrivate.cancel_order(openOrders_oid_sell_limitBal) if deri_test == 0 else (
 						client_trading.private_cancel_get(openOrders_oid_sell_limitBal)))),ENDC)
 
 			default_order_limit = {
@@ -1155,8 +1270,8 @@ class MarketMaker(object):
 				"cliOrdId": "my_stop_client_id"
 				}
 
-			place_bids  =  equity==True  
-			place_asks  =   equity==True 
+			place_bids  =  equity_test==True  
+			place_asks  =   equity_test==True 
 
 
 #TODO:'place_bids'
@@ -1172,27 +1287,31 @@ class MarketMaker(object):
 					test_time		=	(filledOrders_sell_lastTime_conv < openOrders_time_buy_conv or openOrders_time_buy_conv ==0) and (
 						filledOrders_sell_lastTime_conv < IDLE_TIME*5
 					)
-										
+															
 					test_qty_sum_perp 	=	abs(hold_qty_sell) >  openOrders_qty_buy_limit_sum and abs(
-										hold_qty_sell) > 0 #4 menjamin order sell maks = order buy					
+										hold_qty_sell) > 0  and filledOrders_qty_sell <= QTY  #4 menjamin order sell maks = order buy					
 					
-					prc_imbal 		=	 min(bid_prc, int(hold_avgPrc_sell-(hold_avgPrc_sell * MARGIN * 2)) if curr=='xbt' else float(
-										(round(hold_avgPrc_sell-(hold_avgPrc_sell * MARGIN * 2),8))) ) 
+					#round(hold_avgPrc_sell*(2/100),8)
+
+					xrp_prc=float(self.truncate(hold_avgPrc_sell,8))
+					xrp_margin= int((hold_avgPrc_sell * (one_pct ))/TICK) * TICK											
+					xrp_prc=  float(self.truncate((xrp_prc - xrp_margin ),8)) 
+
+					prc_imbal 		=	 min(bid_prc, int(hold_avgPrc_sell-(hold_avgPrc_sell * one_pct  )) if curr=='xbt' else  xrp_prc)
 										
 					test_qty_freq 	=  openOrders_qty_buy_limitLen < FREQ#3 boleh sampai 5 misalnnya
 
-					test_pct_sum 	=  False if abs(hold_qty_sell)==0 else (openOrders_qty_buy_limit_sum /abs(hold_qty_sell)) < 40/100#ini buat apa ya ? kayaknya nggak perlu deh
+					prc_limit		=	bid_prc if filledOrders_prc_sell ==0 else min(bid_prc ,int(filledOrders_prc_sell  - (TICK*2)) if curr== 'xbt' else (
+						 filledOrders_prc_sell  - TICK))
 
-					prc_limit		=	bid_prc if filledOrders_prc_sell ==0 else min(bid_prc ,(int(filledOrders_prc_sell  - (hma_prc_sell)) if curr== 'xbt' else float( (round(
-										filledOrders_prc_sell  - (hma_prc_sell),8)))))-TICK
-					
 #NORMAL,  limit seketika setelah eksekusi order
 
-					if (test_qty_sum_perp == True  and test_time == True  ):													
+					if (test_qty_sum_perp == True  and test_time == True ):													
 
 						print(GREEN + str((fut,'#NORMAL, bila limit diekseskusi','test_qty_sum_perp',test_qty_sum_perp,
 						'test_time',test_time,'filledOrders_sell_lastTime_conv', filledOrders_sell_lastTime_conv,
-						'openOrders_time_buy_conv',  openOrders_time_buy_conv,'IDLE_TIME',IDLE_TIME)),ENDC)
+						'openOrders_time_buy_conv',  openOrders_time_buy_conv,'IDLE_TIME',IDLE_TIME,'prc_limit',prc_limit,'filledOrders_prc_sell',filledOrders_prc_sell,
+						)),ENDC)
 						if deri_test == 1 and qty_imbal_perp !=0:
 
 							client_trading.private_buy_get(
@@ -1201,12 +1320,12 @@ class MarketMaker(object):
 								type		=limit,
 								price		=prc_limit,
 								post_only		='true',
-								amount			=qty_imbal_perp
+								amount			=abs(filledOrders_qty_sell)
 							)	
 
 						if deri_test == 0 and qty_imbal_perp !=0:
 									
-							print(GREEN + str((fut,cfPrivate.send_order_1(dict(default_order_limit,**{"size": qty_imbal_perp,"limitPrice":prc_limit}))
+							print(GREEN + str((fut,cfPrivate.send_order_1(dict(default_order_limit,**{"size": abs(filledOrders_qty_sell),"limitPrice":prc_limit}))
 						)),ENDC)
 
 #pengimbang saldo sell, sisa apa pun, dimasukkan ke average 						
@@ -1215,7 +1334,7 @@ class MarketMaker(object):
 						qty=abs(filledOrders_qty_sell)
 
 						print(GREEN + str((fut,'#pengimbang AVG DOWN','hold_qty_sell',abs(hold_qty_sell),
-						'(abs(hold_qty_sell)-abs(openOrders_qty_buy_limit)) >= 0',
+						'(abs(hold_qty_sell)-abs(openOrders_qty_buy_limit)) >= 0','qty_imbal_perp',qty_imbal_perp,
 						(abs(hold_qty_sell)-abs(openOrders_qty_buy_limit)) > 0,
 						abs(openOrders_qty_buy_limit),'test_qty_sum_perp ',test_qty_sum_perp,'cancel_perp_test',cancel_perp_test )),ENDC)
 
@@ -1227,7 +1346,7 @@ class MarketMaker(object):
 							type            =limit,
 							price           =prc_imbal,#seharusnya prc_net ,
 							post_only       ='true',
-							amount          =qty_imbal,
+							amount          =qty_imbal_perp,
 							)	
 
 						if deri_test == 0 :
@@ -1235,40 +1354,27 @@ class MarketMaker(object):
 							print(GREEN + str((fut,cfPrivate.send_order_1(dict(default_order_limit,**{"size": qty_imbal_perp,"limitPrice":prc_imbal}))
 						)),ENDC)
 
+#NORMAL,, pasang posisi beli pada QTY =0/avg down  					                                                   							
+				elif  fut_test==1 and (openOrders_qty_buy == 0 or  openOrders_qty_buy_filled !=0):
 
-#NORMAL,, pasang posisi beli pada QTY =0/avg down  					                                                    							
-				elif  fut_test==1 and (openOrders_qty_buy == 0 or  openOrders_qty_buy_filled !=0) and bid_oke==True:
-					
-					for i in range(max(0,nbids)):
-						if i <nbids:
+					if  test_time_fut == True   or (test_qty_zero_fut ==True ) or delta_time_buy ==0:
+							
+						prc= bid_prc   
 
-							#test_qty_zero =  ((hold_qty_buy ==0 and openOrders_qty_buy_limit == 0))					
-							print(GREEN + str((fut,'#NORMAL AAA, pasang posisi beli pada QTY =0/avg down','test_time_fut', delta_time_buy > IDLE_TIME,
-								'test_qty_zero_fut',((hold_qty_buy ==0 and openOrders_qty_buy_limit == 0)),
-								'delta_time_buy',delta_time_buy,'IDLE_TIME',IDLE_TIME,'prc',bid_prc ,
-								'QTY',QTY,'openOrders_qty_buy',openOrders_qty_buy,'openOrders_qty_buy_filled',openOrders_qty_buy_filled,
-								'bid_prc -(TICK * i)',bid_prc -(TICK * i)
-								)),ENDC)			
-											
-							if  test_time_fut == True   or (test_qty_zero_fut ==True ) and i < nbids :
-									
-								prc= bid_prc if i == 0 else bid_prc -(TICK * i)
-								qty= 1
+						if deri_test == 1 :
 
-								if deri_test == 1 :
+							client_trading.private_buy_get(
+							instrument_name=fut,
+							amount=QTY,
+							price=prc,
+							type=limit,
+							reduce_only='false',
+							post_only='true'
+							)		
 
-									client_trading.private_buy_get(
-									instrument_name=fut,
-									amount=QTY,
-									price=prc,
-									type=limit,
-									reduce_only='false',
-									post_only='true'
-									)		
-
-								if deri_test == 0  :
-									print(GREEN + str((fut,cfPrivate.send_order_1(dict(default_order_limit,**{"size": qty,"limitPrice":prc}))
-								)),ENDC)
+						if deri_test == 0  :
+							print(GREEN + str((fut,cfPrivate.send_order_1(dict(default_order_limit,**{"size": QTY,"limitPrice":prc}))
+						)),ENDC)
 
 						else:
     
@@ -1287,19 +1393,20 @@ class MarketMaker(object):
 					test_time		= 	(filledOrders_buy_lastTime_conv < openOrders_time_sell_conv or openOrders_time_sell_conv ==0) and (
 						filledOrders_buy_lastTime_conv <  IDLE_TIME *5
 					)
-											
-					
 
-					prc_imbal 	=	 max(ask_prc, int(hold_avgPrc_buy+(hold_avgPrc_buy*MARGIN * 2)) if curr=='xbt' else float(round(
-										hold_avgPrc_buy+(hold_avgPrc_buy*MARGIN * 2),8)) )
-					test_qty_sum_fut 	= 	hold_qty_buy > abs(openOrders_qty_sell_limit_sum)   and abs(abs(hold_qty_buy) ) > 0 
+					xrp_prc=float(self.truncate(hold_avgPrc_buy,8))
+					xrp_margin= int((hold_avgPrc_buy * (one_pct  ))/TICK) * TICK											
+					xrp_prc=  float(self.truncate((xrp_prc + xrp_margin ),8)) 
+					xbt_prc=  int(hold_avgPrc_buy+(hold_avgPrc_buy*one_pct ))
 
-					test_qty_freq 	=  abs(openOrders_qty_sell_limitLen ) < FREQ
-					test_pct_sum 	=  False if abs(hold_qty_buy)==0 else (
-										openOrders_qty_sell_limit_sum /abs(hold_qty_buy)) < 40/100					
+					prc_imbal 	=	 max(ask_prc, (xbt_prc if curr=='xbt' else xrp_prc) )
+					test_qty_sum_fut 	= 	hold_qty_buy > abs(openOrders_qty_sell_limit_sum)   and abs(
+						abs(hold_qty_buy) ) > 0  and filledOrders_qty_buy <= QTY 
 
-					prc_limit		=	ask_prc if filledOrders_prc_buy ==0 else max(ask_prc ,int(filledOrders_prc_buy+(hma_prc_buy)) if curr== 'xbt' else float( (round(
-									filledOrders_prc_buy+(hma_prc_buy),8)))) + TICK
+					test_qty_freq 	=  abs(openOrders_qty_sell_limitLen ) < FREQ										
+
+					prc_limit		=	ask_prc if filledOrders_prc_buy ==0 else max(ask_prc ,int(filledOrders_prc_buy+(TICK*2)) if curr== 'xbt' else float( (round(
+									filledOrders_prc_buy+(TICK),8)))) + TICK
 
 #NORMAL,  limit seketika setelah eksekusi order
 
@@ -1319,11 +1426,11 @@ class MarketMaker(object):
 							type=limit,
 							price=prc_limit,
 							post_only='true',
-							amount=qty)	
+							amount=filledOrders_qty_buy)	
 
 						if deri_test == 0 and qty_imbal_fut !=0:
 
-							print(RED + str((fut,cfPrivate.send_order_1(dict(default_order_limit,**{"size": qty_imbal_fut,"limitPrice":prc_limit}))
+							print(RED + str((fut,cfPrivate.send_order_1(dict(default_order_limit,**{"size": filledOrders_qty_buy,"limitPrice":prc_limit}))
 						)),ENDC)
 
 #pengimbang saldo sell, sisa apa pun, dimasukkan ke average 						
@@ -1345,38 +1452,30 @@ class MarketMaker(object):
 						)),ENDC)
 
 #NORMAL,, pasang posisi beli pada QTY =0/avg up  					                                                    							
-				elif   perp_test==1 and (openOrders_qty_sell == 0 or  openOrders_qty_sell_filled !=0 ) and ask_oke==True:
+				elif   perp_test==1 and (openOrders_qty_sell == 0 or  openOrders_qty_sell_filled !=0 ) :
 
 					test_qty_zero_perp =  hold_qty_sell ==0 and abs(openOrders_qty_sell_limit) ==0
-					test_time = delta_time_sell > IDLE_TIME
-					
-					for i in range(max(0,nasks)):
-						if i <nasks:
+#					test_time = delta_time_sell > IDLE_TIME	
+									
+					if  ( test_time_perp == True )  or (test_qty_zero_perp ==True) or delta_time_sell==0:
 
+						prc= ask_prc 
+						
+						if deri_test == 1 :
+							client_trading.private_sell_get(
+							instrument_name=fut,
+							reduce_only='false',
+							type=limit,
+							price=max(prc,ask_prc) ,
+							post_only='true',
+							amount=QTY
+							)	
 
-							print(RED + str((fut,'#NORMAL,pasang posisi beli pada QTY =0/avg up','test_time', delta_time_sell > IDLE_TIME,
-							'test_qty_zero',test_qty_zero_perp,'delta_time_sell',delta_time_sell,'IDLE_TIME',IDLE_TIME,
-							'ask_prc + (TICK*i)',ask_prc + (TICK*i))),ENDC)			
-											
-							if  ( test_time_perp == True )  or (test_qty_zero_perp ==True):
+						if deri_test == 0:
 
-								prc= ask_prc if i == 0 else ask_prc + (TICK*i)
-								qty= 1 
-								
-								if deri_test == 1 :
-									client_trading.private_sell_get(
-									instrument_name=fut,
-									reduce_only='false',
-									type=limit,
-									price=max(prc,ask_prc) ,
-									post_only='true',
-									amount=qty
-									)	
-
-								if deri_test == 0:
-
-									print(RED + str((fut,cfPrivate.send_order_1(dict(default_order_limit,**{"size": qty,"limitPrice":prc}))
-								)),ENDC)
+							print(fut,QTY,prc)
+							print(RED + str((fut,cfPrivate.send_order_1(dict(default_order_limit,**{"size": QTY,"limitPrice":prc}))
+						)),ENDC)
 						else:
     
 							pass
@@ -1384,16 +1483,22 @@ class MarketMaker(object):
 
 			print('\n')
 
+			qty_pos=(([o['size'] for o in [o for o in position_CF  ]]))
+
+			side_pos=(([o['side'] for o in [o for o in position_CF  ]])) 
+			prc_pos=(([int(o['price']) for o in [o for o in position_CF  ]])) 
+			liq=account_CF['triggerEstimates']['lt']
+			bal=account_CF['balances']['xbt']
+			
 			self.summary_account(instruments_list_ori,side_pos,prc_pos,tickers_instrument,qty_pos,open_instrument,open_instrument_len)
 			qty_imbalance_sell 		=	abs(hold_qty_sell_all) -  openOrders_qty_buy_all  #4 menjamin order sell maks = order buy
 			qty_imbalance_buy 	=	abs(hold_qty_buy_all) -  openOrders_qty_sell_all  #4 menjamin order sell maks = order buy
 			
 			print('\n')
 			print(BOLD + str((fut)),ENDC)
-			print(BOLD + str(('qty_imbalance_sell                          ',qty_imbalance_sell)),ENDC)
-			print(BOLD + str(('qty_imbalance_buy                           ',qty_imbalance_buy)),ENDC)
+			
 			print('\n')
-			print(BOLD + str(('counter',counter,'hma',hma_net,)),ENDC)
+			print(BOLD + str(('counter',counter)),ENDC)
 			print('\n')
 
 		#	print('bal=',bal,bal*tickers_xbt_fut[0])
@@ -1402,8 +1507,6 @@ class MarketMaker(object):
 
 			qty= max (hold_qty_buy,abs(hold_qty_sell))
 #			my_message= (f" {datetime.now()}  {fut}  {counter}")
-
-			
 
 #			if counter >10:
 #				telegram_bot_sendtext(my_message)
@@ -1414,7 +1517,7 @@ class MarketMaker(object):
 					sys.exit()
 				break
 								
-			print(BOLD + str((fut,'counter',counter,'hma',hma_net)),ENDC)
+			print(BOLD + str((fut,'counter',counter)),ENDC)
 #			if counter > (COUNTER-4 if equity !=0 else 0) and (
 #				(bid_oke==False and fut_test==1) or (ask_oke==False and perp_test==1)):
 
