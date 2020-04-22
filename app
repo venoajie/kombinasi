@@ -1,49 +1,20 @@
 
-
-from collections import OrderedDict
-
 import os
 import sys
-import logging#, math
+import logging
 import time
 from time import sleep
 from datetime import datetime, timedelta
-print((f"  AA  {datetime.now()} "))
-
 from os.path import getmtime
 import argparse,  traceback
 import requests
-print((f"  AAB  {datetime.now()} "))
-
-from api import RestClient
+#from api import RestClient
 import openapi_client
-print((f"  AAC {datetime.now()} "))
-
-from openapi_client.rest import ApiException
+#from openapi_client.rest import ApiException
 import cfRestApiV3 as cfApi
-print((f"  AAD  {datetime.now()} "))
-
 import ssl
-print((f"  AAD1  {datetime.now()} "))
-
-import pandas as pd  
-
-print((f"  AAD2  {datetime.now()} "))
-
-import numpy as np
-print((f"  AAD3  {datetime.now()} "))
-
 import  json
-print((f"  AAD4  {datetime.now()} "))
-
 from functools import lru_cache
-
-TEST=0
-
-TEST=TEST+1
-
-print((f"  AB {TEST} {datetime.now()} "))
-
 
 #c0t8sxtj@futures-demo.com
 #wpnjckpwaxacphzm78du
@@ -58,56 +29,40 @@ else:
 	# Handle target environment that doesn't support HTTPS verification
 	ssl._create_default_https_context = _create_unverified_https_context
 
-print((f"  AC {TEST} {datetime.now()} "))
-
-
 NOW_TIME 	= datetime.now()
 START_TIME 	= datetime.now() - timedelta (days = 1, hours =24 )
 start_unix 	= time.mktime(START_TIME.timetuple())*1000
 stop_unix 	= time.mktime(NOW_TIME.timetuple())*1000
 
-print((f"  A {TEST} {datetime.now()} "))
-
-
-chck_key=str(int(start_unix/1000))[8:9]#memperkenalkan random untuk multi akun
-
 #FIXME:
-TRAINING=False#True#
-endpoint_training  = "https://conformance.cryptofacilities.com/derivatives"
-endpoint_production="https://www.cryptofacilities.com/derivatives"
-apiPublicKey_training = "PlRnNMw9jpQw1Cnxel99eVqjAp00fCypDdc4zC4godZJa91Y4UXfMHMz"
-apiPublicKey_production = "lBTg/GwBoDSyHzIY/8h9BYiXxNq97ZhUKjgscl6Sm/hTRSWcv1sGznec"
-apiPrivateKey_training ="3k8j0gangNZ/+B0Zxi8WNfpd+6ETXfJf+f/sD3H+K6dolQ5dlw4EtK6VzZxU7LqjktZVgHSdosdT7qxZKcU5sK/Q"
-apiPrivateKey_production ="ROR2h15z2WelO4OXH5MrS4c5TeIJXCE6bq+/l0q4l5GF9stHCNVGWzM3wBNjkrzuVKvCJrXaZoRVYhL47mg2eZzg"
-print((f"  B {TEST} {datetime.now()} "))
+TRAINING                    =  False#True# 
+endpoint_training           =   "https://conformance.cryptofacilities.com/derivatives"
+endpoint_production         =   "https://www.cryptofacilities.com/derivatives"
+apiPublicKey_training       =   "PlRnNMw9jpQw1Cnxel99eVqjAp00fCypDdc4zC4godZJa91Y4UXfMHMz"
+apiPublicKey_production     =   "lBTg/GwBoDSyHzIY/8h9BYiXxNq97ZhUKjgscl6Sm/hTRSWcv1sGznec"
+apiPrivateKey_training      =   "3k8j0gangNZ/+B0Zxi8WNfpd+6ETXfJf+f/sD3H+K6dolQ5dlw4EtK6VzZxU7LqjktZVgHSdosdT7qxZKcU5sK/Q"
+apiPrivateKey_production    =   "ROR2h15z2WelO4OXH5MrS4c5TeIJXCE6bq+/l0q4l5GF9stHCNVGWzM3wBNjkrzuVKvCJrXaZoRVYhL47mg2eZzg"
 
-apiPath = endpoint_production if TRAINING==False else endpoint_training 
-apiPrivateKey =apiPrivateKey_production if TRAINING==False else apiPrivateKey_training
-apiPublicKey = apiPublicKey_production if TRAINING==False else apiPublicKey_training
-checkCertificate = True if TRAINING==False else False # False# # when using the test environment, this must be set to "False"
-timeout = 5
-useNonce = False  # nonce is optional
+apiPath 					= 	endpoint_production if TRAINING==False else endpoint_training 
+apiPrivateKey 				=	apiPrivateKey_production if TRAINING==False else apiPrivateKey_training
+apiPublicKey 				= apiPublicKey_production if TRAINING==False else apiPublicKey_training
+checkCertificate 			= True if TRAINING==False else False 
+timeout 					= 5
+useNonce 					= False  # nonce is optional
 
-cfPublic = cfApi.cfApiMethods(apiPath, timeout=timeout, checkCertificate=checkCertificate)
-cfPrivate = cfApi.cfApiMethods(apiPath, timeout=timeout, apiPublicKey=apiPublicKey, apiPrivateKey=apiPrivateKey, checkCertificate=checkCertificate, useNonce=useNonce)
-print((f"  C{TEST} {datetime.now()} "))
+cfPublic 					= cfApi.cfApiMethods(apiPath, 
+								timeout=timeout, 
+								checkCertificate=checkCertificate)
+
+cfPrivate 					= cfApi.cfApiMethods(apiPath, 
+								timeout=timeout, 
+								apiPublicKey=apiPublicKey, 
+								apiPrivateKey=apiPrivateKey, 
+								checkCertificate=checkCertificate, 
+								useNonce=useNonce)
 
 key = "_zEH40KQ"
 secret = "UJoBPSraxZvVzM42MMjiygTYUzKoSu3skyG2EE7wN90"
-#mwa9
-#if  chck_key == '1'or chck_key=='3' or chck_key=='5' or chck_key=='7' or chck_key=='9':
-#	key = "_zEH40KQ"
-#	secret = "UJoBPSraxZvVzM42MMjiygTYUzKoSu3skyG2EE7wN90"
-
-#mwa8
-#elif  chck_key == '0'or chck_key=='2' or chck_key=='4' or chck_key=='6' or chck_key=='8':
-    
-#	key = "DhlgfdXo"
-#	secret ="PJCtPjbB8VphCpF2oSNV0DBb51hZJ0sLGpZ-21-96as"
-
-#else  :
-#	key = ""
-#	secret = ""
 
 deribitauthurl = "https://deribit.com/api/v2/public/auth"
 
@@ -126,13 +81,10 @@ api=openapi_client
 client_public = api.PublicApi(api.ApiClient(configuration))
 #client_private = api.PrivateApi(api.ApiClient(configuration))
 #client_market = api.MarketDataApi(api.ApiClient(configuration))
-
-print((f"  D {TEST} {datetime.now()} "))
-         
+        
 sender_email =  'ringkasan.akun@gmail.com'
 receiver_email = 'venoajie@gmail.com'
 password = 'ceger844579*'
-
 
 # Add command line switches
 parser = argparse.ArgumentParser(description='Bot')
@@ -142,16 +94,6 @@ parser.add_argument('-p',
 					dest='use_prod',
 					action='store_true')
 
-# Do not display regular status updates to terminal
-parser.add_argument('--no-output',
-					dest='output',
-					action='store_false')
-
-# Monitor account only, do not send trades
-parser.add_argument('-m',
-					dest='monitor',
-					action='store_true')
-
 # Do not restart bot on errors
 parser.add_argument('--no-restart',
 					dest='restart',
@@ -159,14 +101,12 @@ parser.add_argument('--no-restart',
 
 args = parser.parse_args()
 
-
 one_pct       = 1/100
 DELTA_PRC	=  one_pct /20
 IDLE_TIME   = 600 #nggak jalan?
 LOG_LEVEL   = logging.INFO
-INTERVAL	= 3 #5 minutes
 XRP_ROUND	=100000000
-COUNTER		=5
+COUNTER		=2
 FREQ		= 8
 RED   		= '\033[1;31m'#Sell
 BLUE  		= '\033[1;34m'#information
@@ -176,16 +116,29 @@ RESET 		= '\033[0;0m'
 BOLD    	= "\033[;1m"
 REVERSE 	= "\033[;7m"
 ENDC 		= '\033[m' # 
-
-s = requests.Session()
-TEST=TEST+1
-print((f"  E {TEST} {datetime.now()} "))
+time_now    =	time.mktime(NOW_TIME.timetuple())
+s 			= requests.Session()
 
 def time_conversion( waktu ):
+	'''Mengonversi waktu format ISO ke UTC'''
+	
+	conv_formula	=  	time.mktime (
+						datetime.strptime(
+							waktu,
+							'%Y-%m-%dT%H:%M:%S.%fZ').
+							timetuple() )
 
-	time_now        =	time.mktime(NOW_TIME.timetuple())
-	conv_formula	=  	time.mktime (datetime.strptime(waktu,'%Y-%m-%dT%H:%M:%S.%fZ').timetuple() )
 	konversi 		= 	time_now - conv_formula
+
+	return konversi
+
+def time_conversion_ori( waktu ):
+	'''Mengonversi waktu format ISO ke UTC'''
+
+	konversi		=  	time.mktime (
+						datetime.strptime(
+							waktu,
+							'%Y-%m-%dT%H:%M:%S.%fZ').timetuple() )
 
 	return konversi
 
@@ -201,22 +154,6 @@ def get_logger( name, log_level ):
 
 	return logger
 
-def sort_by_key( dictarg ):
-	return OrderedDict( sorted( dictarg.items(), key = lambda t: t[ 0 ] ))
-
-def telegram_bot_sendtext(bot_message):
-
-	bot_token   = '1035682714:AAGea_Lk2ZH3X6BHJt3xAudQDSn5RHwYQJM'
-	bot_chatID  = '148190671'
-	send_text   = 'https://api.telegram.org/bot' + bot_token + (
-								'/sendMessage?chat_id=') + bot_chatID + (
-							'&parse_mode=Markdown&text=') + bot_message
-
-	response    = s.get(send_text)
-
-	return response.json()
-print((f"  F{TEST} {datetime.now()} "))
-
 class MarketMaker(object):
 
 	def __init__(self, monitor=True, output=True):
@@ -227,16 +164,13 @@ class MarketMaker(object):
 #		self.client_private = None
 #		self.client_market = None
 #		self.client_market = None
-		self.futures = OrderedDict()
 		self.logger = None
 		self.monitor = monitor
 		self.output = output or monitor
-		self.position = OrderedDict()
-		self.positions = OrderedDict()
 
 	def create_client(self):
 
-		self.client = RestClient(key, secret, deribitauthurl)
+		self.client = (key, secret, deribitauthurl)
 
 #	def create_client_public(self):
 #		self.client_public = client_public
@@ -253,9 +187,6 @@ class MarketMaker(object):
 #	def create_client_market(self):
 #		self.client_trading =  client_market
 	
-	TEST=0
-	print((f"  G {TEST} {datetime.now()} "))
-
 #	@lru_cache(maxsize=None)
 #	def book_summary_drbt( self, currency):
     		
@@ -266,12 +197,11 @@ class MarketMaker(object):
 		
 #		return book_summ
 
-	TEST=TEST+1
-	print((f" 3 {TEST} {datetime.now()}  "))
-
 	@lru_cache(maxsize=None)
 	def get_bbo_drbt( self, book_summ, contract ):
-    		
+
+		'''Mendapatkan orderbook deribit'''
+   		
 		ob_drbt 	=	(  [ o for o in [o for o in book_summ if o[
 						'instrument_name']==contract   ]]  )[0]
 		bid_prc		=  ob_drbt ['bid_price']
@@ -280,162 +210,12 @@ class MarketMaker(object):
 		return { 'bid': bid_prc, 'ask': ask_prc }
 
 	@lru_cache(maxsize=None)
-	def get_bbo( self, contract ):
-    				
-		ob_cf		= json.loads(cfPublic.getorderbook(contract.upper()))['orderBook'] 
-	
-		bid_prc         =  ob_cf ['bids'][0][0]
-		ask_prc         =  ob_cf ['asks'][0][0]
-
-		return { 'bid': bid_prc, 'ask': ask_prc }
-
-				
-	@lru_cache(maxsize=None)
-	def DF(self,endpoint):  
-
-		INSTRUMENT_NAME = 'BTC-PERPETUAL'
-		params = {
-			'instrument_name': INSTRUMENT_NAME,
-			'start_timestamp': int(start_unix),
-			'end_timestamp': int(stop_unix),
-			'resolution': INTERVAL
-		}
-
-		
-		df = pd.DataFrame(s.get(endpoint, params=params).json()['result']).tail(50) 
-
-		columns_to_delete = ['open', 'cost','volume','status']
-		
-		df.drop(columns_to_delete, inplace=True, axis=1)
-
-		df['ticks']=pd.to_datetime(df['ticks'],unit='ms')
-
-		return df
-
-	TEST=TEST+1
-	print((f" 4 {TEST}{datetime.now()}"))
-
-	@lru_cache(maxsize=None)
-
-	def DF_XRP(self,endpoint):  # Get all current futures instruments
-
-
-		df_xrp			= 	pd.DataFrame((s.get(endpoint).json()['result']['XXRPXXBT'])).tail(50) 
-		
-		df_xrp 			= 	df_xrp.rename(columns={
-							0: 'ticks',1: 'open',2: 'high',3: 'low',
-							4: 'close',5: 'vwap',6: 'volume',7: 'count' })
-		
-		columns_to_delete = ['open', 'vwap','volume','count']
-		
-		df_xrp.drop(columns_to_delete, inplace=True, axis=1)
-		
-		df_xrp['ticks']	=	pd.to_datetime(df_xrp['ticks'],unit='s')
-
-		df_xrp['close']	=	pd.Series((df_xrp['close'])).astype(float)*XRP_ROUND
-		df_xrp['high']	=	pd.Series((df_xrp['high'])).astype(float)*XRP_ROUND
-		df_xrp['low']	=	pd.Series((df_xrp['low'])).astype(float)*XRP_ROUND
-
-		return df_xrp
-
-
-	TEST=TEST+1
-	print((f" 5 {TEST}{datetime.now()} "))
-	
-	def WMA(self,df, n,column='close'):
-    		
-		ws 		= np.zeros(df.shape[0])
-		t_sum 	= sum(range(1, n+1))
-	
-		for i in range(n-1, df.shape[0]):
-			ws[i] = sum(df[i-n+1 : i+1] * np.linspace(1, n, n))/ t_sum
-			
-		return ws #https://github.com/LastAncientOne/Stock_Analysis_For_Quant/blob/master/Python_Stock/Technical_Indicators/WMA.ipynb
-
-
-	TEST=TEST+1
-	print((f" 6 {TEST}{datetime.now()} "))
-
-
-	def HMA(self,df, n):
-    		
-		hma 	= self.WMA(2 * self.WMA(df, int(n/2)) - self.WMA(df, n), int(np.sqrt(n)))
-			
-		return hma #https://github.com/kylejusticemagnuson/pyti/blob/master/pyti/hull_moving_average.py
-
-
-
-	#Relative Strength Index  
-	def RSI(self, df, column="close", period=14):
-		
-		delta = df[column].diff()
-		up, down = delta.copy(), delta.copy()
-
-		up[up < 0] = 0
-		down[down > 0] = 0
-
-		rUp = up.ewm(com=period - 1,  adjust=False).mean()
-		rDown = down.ewm(com=period - 1, adjust=False).mean().abs()
-
-		df ['RSI']= 100 - 100 / (1 + rUp / rDown)    
-
-		return
-	#Average True Range  
-	def ATR(self,df,n): #df is the DataFrame, n is the period 7,14 ,etc
-		df['H-L']=abs(df['high']-df['low'])
-		df['H-PC']=abs(df['high']-df['close'].shift(1))
-		df['L-PC']=abs(df['low']-df['close'].shift(1))
-		df['TR']=df[['H-L','H-PC','L-PC']].max(axis=1)
-		df['ATR']=np.nan
-		df.loc[n-1,'ATR']=df['TR'][:n-1].mean()
-		for i in range(n,len(df)):
-		#	df['ATR'][i]=(df['ATR'][i-1]*(n-1)+ df['TR'][i])/n
-			df.loc[i, 'ATR'] = (df.loc[i - 1, 'ATR'] * (n -1) + df.loc[i, 'TR']) / n
-
-		return 
-		#print (ATR,df,14)
-
-	def SMAATR(self,df, column="ATR", period=20):
-		
-		df['SMAATR'] = df[column].rolling(window=period, min_periods=period - 1).mean()
-		return
-
-
-	#Bollinger Bands  
-	def BBANDS(self,df, n):  
-		MA = pd.Series(pd.rolling_mean(df['close'], n))  
-		MSD = pd.Series(pd.rolling_std(df['close'], n))  
-		b1 = 4 * MSD / MA  
-		B1 = pd.Series(b1, name = 'BollingerB_' + str(n))  
-		df = df.join(B1)  
-		b2 = (df['close'] - MA + 2 * MSD) / (4 * MSD)  
-		B2 = pd.Series(b2, name = 'Bollinger%b_' + str(n))  
-		df = df.join(B2)  
-		return df
-
-	#Pivot Points, Supports and Resistances  
-	def PPSR(self,df):  
-		PP = pd.Series((df['high'] + df['low'] + df['close']) / 3)  
-		R1 = pd.Series(2 * PP - df['low'])  
-		S1 = pd.Series(2 * PP - df['high'])  
-		R2 = pd.Series(PP + df['high'] - df['low'])  
-		S2 = pd.Series(PP - df['high'] + df['low'])  
-		R3 = pd.Series(df['high'] + 2 * (PP - df['low']))  
-		S3 = pd.Series(df['low'] - 2 * (df['high'] - PP))  
-		psr = {'PP':PP, 'R1':R1, 'S1':S1, 'R2':R2, 'S2':S2, 'R3':R3, 'S3':S3}  
-		PSR = pd.DataFrame(psr)  
-		df = df.join(PSR)  
-		return df
-
-
-#https://www.quantopian.com/posts/technical-analysis-indicators-without-talib-code
-
-	@lru_cache(maxsize=None)
 	def filledOrder_cf(self,contract ):
-    						
+
+		'''Mendapatkan order yang tereksekusi CF'''
+
 		return  [ o for o in [o for o in json.loads(cfPrivate.get_fills())[
 									'fills'] if o['symbol']==contract   ]] 
-
 
 	@lru_cache(maxsize=None)
 	def account_drbt(self,contract ):
@@ -453,9 +233,7 @@ class MarketMaker(object):
     						
 		return  json.loads(cfPrivate.get_openpositions())['openPositions']
 
-
-
-	@lru_cache(maxsize=None)
+#	@lru_cache(maxsize=None)
 	def openOrders_CF(self ):
     						
 		return  json.loads(cfPrivate.get_openorders())['openOrders'] 
@@ -468,62 +246,52 @@ class MarketMaker(object):
 	@lru_cache(maxsize=None)
 	def get_tickers_CF(self ):
     						
-		return  json.loads(cfPrivate.get_tickers())['tickers']
+		return  json.loads(cfPrivate.get_tickers())
+
+	@lru_cache(maxsize=None)
+	def get_bbo_CF( self,  contract ):
+    		
+		tickers 	=	self.get_tickers_CF()['tickers']
+		tickers		=	list(tuple(tickers))#https://stackoverflow.com/questions/39189272/python-list-comprehension-and-json-parsing
+
+		bid_prc		=  [ o['bid'] for o in[o for o in tickers  if o['symbol']==contract]] [0]
+		ask_prc		=   [ o['ask'] for o in[o for o in tickers  if o['symbol']==contract]] [0]
+		  		
+		return { 'bid': bid_prc, 'ask': ask_prc}
+
+	@lru_cache(maxsize=None)
+	def get_tag_CF( self ):
+    		
+		tickers 	=	self.get_tickers_CF()['tickers']
+		tickers		=	list(tuple(tickers))#https://stackoverflow.com/questions/39189272/python-list-comprehension-and-json-parsing
+
+		perp		= [ o['symbol'] for o in[o for o in tickers  if o['symbol']=='pi_xbtusd']] 
+		qtr		=  [ o['symbol'] for o in[o for o in tickers  if o['symbol']=='pi_xbtusd']] 
+		mth		=  [ o['symbol'] for o in[o for o in tickers  if o['symbol']=='pi_xbtusd']] 
+		  		
+		return { 'perp': perp, 'qtr': qtr,'mth': mth}
 
 #	def filledOrder_drbt(self,contract ):
 
 #		return client_trading.private_get_order_history_by_instrument_get (
 #											instrument_name=contract, count=10)['result']
 
-	def filter_one_var(self,data,result,filter,member,attr ):
+	def filter_one_var(self,data,result,filter,member ):
     
 		try:
-			filter	=  attr([o[result] for o in [o for o in data if o[filter] == member ]])
+			filter	=  ([o[result] for o in [o for o in data if o[filter] == member ]])
 		
 		except:
 			filter 	= []
 
 		return filter
 
-	TEST=TEST+1
-	print((f" 7 {TEST} {datetime.now()} "))
 
-	def summary_account (self,names,side,avg,tickers_instrument,qty,open_instrument,len_instrument):
-  
-		names =names
-		qty =qty
-		avg = avg
-		side =side
-		ticker =tickers_instrument
-		open_instrument=open_instrument
-		longest_string = max(map(len, names)) 
-		titles = ['instruments', 'side', 'avg_prc','ticker','hold_qty', 'open_qty','freq_qty']
-		data = [titles] + list(zip(names, side,  avg,tickers_instrument,qty, open_instrument,len_instrument))
-
-		for i, d in enumerate(data):
-			line = '|'.join(str(x).ljust(longest_string + 2) for x in d)
-			print(CYAN + str(line),ENDC)
-			if i == 0:
-				print(RED + str('-' * len(line)),ENDC)
-
-	def format_matrix(self,header, matrix,top_format, left_format, cell_format, row_delim, col_delim):
-		table = [[''] + header] + [[name] + col for name, col in zip(header, matrix)]
-		table_format = [['{:^{}}'] + len(header) * [top_format]] \
-                    + len(matrix) * [[left_format] + len(header) * [cell_format]]
-		col_widths = [max(
-                        len(format.format(cell, 0))
-                        for format, cell in zip(col_format, col))
-                    for col_format, col in zip(zip(*table_format), zip(*table))]
-		return row_delim.join(
-                col_delim.join(
-                    format.format(cell, width)
-                    for format, cell, width in zip(row_format, row, col_widths))
-                for row_format, row in zip(table_format, table))
-
-	def filter_two_var(self,data,result,filter1,member1,filter2,member2,attr ):
+	def filter_two_var(self,data,result,filter1,member1,filter2,member2 ):
     
 		try:
-			filter	=  attr([o[result] for o in [o for o in data if o[filter1] == member1 and  o[filter2] == member2 ]])
+			filter	=  ([o[result] for o in [o for o in data if o[
+						filter1] == member1 and  o[filter2] == member2 ]])
 		
 		except:
 			filter 	= []
@@ -540,8 +308,6 @@ class MarketMaker(object):
 
 		return filter
 
-	TEST=TEST+1
-	print((f" 8 {TEST}{datetime.now()}"))
 
 
 	def truncate(self,f, n):
@@ -549,7 +315,6 @@ class MarketMaker(object):
 		s = '%.12f' % f
 		i, p, d = s.partition('.')
 		return '.'.join([i, (d+'0'*n)[:n]])
-#https://stackoverflow.com/questions/783897/truncating-floats-in-python
 
 	def place_orders(self):					
 	
@@ -558,16 +323,12 @@ class MarketMaker(object):
 #		self.get_instruments_drbt 	= 	sort_by_key({i['instrument_name']: i for i in (get_instruments_drbt)})	
 
 #		deri			= list((self.futures).keys())
-		TEST=8
-		print((f" 8A {TEST}{datetime.now()} "))
-		 					
+	 					
 	#	stamp			=  [o['instrument_name']  for o in [o for o in get_instruments_drbt if  len(o['instrument_name'])==11 
      #                                               ]]
 	#	stamp_new		=  (  min( (stamp)[0],(stamp)[1]))
 
 		get_instruments_CF           = self. get_instruments_CF()
-
-		print((f" 8B {TEST}{datetime.now()} "))
 
 		xbt_perp		= ['pi_xbtusd']
 
@@ -580,144 +341,55 @@ class MarketMaker(object):
 							o for o in get_instruments_CF if o[
 								'symbol'][3:][:3]=='xbt' and len(o[
 									'symbol'])<=16 and o['symbol'][:1] == 'f'  ]])]
+		
 		xrp_perp		= ['pv_xrpxbt']
 
 		xrp_fut			= [ o['symbol'] for o in[o for o in get_instruments_CF if (
 							o['symbol'][3:][:3]=='xrp' and o['symbol'][3:][3:][
 								:3] !='usd'and  (o['symbol'][:1] == 'f' ))  ]]
 
-		print((f" 8C {TEST}{datetime.now()} "))
-
 		instruments_list_ori= list( xbt_perp + xbt_fut+ xbt_fut_min+xrp_perp + xrp_fut  )
-		tickers=json.loads(cfPrivate.get_tickers())
+		instruments_list_xbt= list( xbt_perp + xbt_fut)
+		instruments_list_alts= list( xrp_perp + xrp_fut  )
 
+		tickers=self.get_tickers_CF()
+
+		serverTime=tickers['serverTime']
 		tickers=tickers['tickers']
 
-		serverTime=json.loads(cfPrivate.get_tickers())['serverTime']
+		instruments_list= list(instruments_list_xbt + instruments_list_alts)
 
-#FIXME: 
-		print((f" 8CA {TEST}{datetime.now()} "))
-
-		instruments_list= list( ((xbt_fut)) + xbt_perp +  xrp_perp + xrp_fut  )
-		chck_key_list=['1','2','3','4','5','7']
-
-		instruments_list= instruments_list if chck_key in chck_key_list  else  instruments_list[::-1]
-
-					#mendapatkan atribut isi akun deribit vs crypto facilities			
+#!mendapatkan atribut isi akun deribit vs crypto facilities			
 
 		account_CF      =self.account_CF()
 		
-#FIXME: 
-		print((f" 8CB {TEST}{datetime.now()} "))
-
 		openOrders_CF				=	 self.openOrders_CF()
-		
-#FIXME: 
-		print((f" 8CC {TEST}{datetime.now()} "))
-
+        
 		openOrders_CF           = [] if openOrders_CF ==[] else openOrders_CF
-		print((f" 8D {TEST}{datetime.now()} "))
 
 		try:
 			position_CF= self.position_CF()
 
 		except:
 			position_CF=0
-	
-		tickers_xbt_perp			= self.filter_one_var(tickers,'markPrice','symbol',xbt_perp[0],list )
-		tickers_xbt_fut			= self.filter_one_var(tickers,'markPrice','symbol',xbt_fut[0],list )
-		tickers_xbt_fut_min			= self.filter_one_var(tickers,'markPrice','symbol',xbt_fut_min[0],list )
-		tickers_xrp_perp			= self.filter_one_var(tickers,'markPrice','symbol',xrp_perp[0],list )
-		tickers_xrp_fut			= self.filter_one_var(tickers,'markPrice','symbol',xrp_fut[0],list )
 
-		print((f" 8E {TEST}{datetime.now()} "))
-
-		open_xbt_perp			= [sum( [ o['unfilledSize'] for o in[
-							o for o in openOrders_CF if o[
-								'symbol']==xbt_perp[0] and o[
-								'side']== 'buy'  ]])]
-
-		open_xbt_fut			= [sum( [ o['unfilledSize'] for o in[
-							o for o in openOrders_CF if o[
-								'symbol']==xbt_fut[0] and o[
-								'side']== 'sell'  ]])]
-
-		open_xbt_fut_min			= [sum( [ o['unfilledSize'] for o in[
-							o for o in openOrders_CF if o[
-								'symbol']==xbt_fut_min[0] and o[
-								'side']== 'buy'  ]])]
-		open_xrp_perp			= [sum( [ o['unfilledSize'] for o in[
-							o for o in openOrders_CF if o[
-								'symbol']==xrp_perp[0] and o[
-								'side']== 'buy'  ]])]
-		open_xrp_fut			= [len( [ o['unfilledSize'] for o in[
-							o for o in openOrders_CF if o[
-								'symbol']==xrp_fut[0] and o[
-								'side']== 'sell'  ]])]
-
-		open_xbt_perp_len			= [len( [ o['unfilledSize'] for o in[
-							o for o in openOrders_CF if o[
-								'symbol']==xbt_perp[0] and o[
-								'side']== 'buy'  ]])]
-
-		open_xbt_fut_len			= [len( [ o['unfilledSize'] for o in[
-							o for o in openOrders_CF if o[
-								'symbol']==xbt_fut[0] and o[
-								'side']== 'sell'  ]])]
-
-		open_xbt_fut_min_len			= [len( [ o['unfilledSize'] for o in[
-							o for o in openOrders_CF if o[
-								'symbol']==xbt_fut_min[0] and o[
-								'side']== 'buy'  ]])]
-		open_xrp_perp_len			= [len( [ o['unfilledSize'] for o in[
-							o for o in openOrders_CF if o[
-								'symbol']==xrp_perp[0] and o[
-								'side']== 'buy'  ]])]
-		open_xrp_fut_len			= [len( [ o['unfilledSize'] for o in[
-							o for o in openOrders_CF if o[
-								'symbol']==xrp_fut[0] and o[
-								'side']== 'sell'  ]])]
-		print((f" 8F {TEST}{datetime.now()} "))
-
-		open_instrument= list( open_xbt_perp + open_xbt_fut+ open_xbt_fut_min+open_xrp_perp + open_xrp_fut  )
-		open_instrument_len= list( open_xbt_perp_len + open_xbt_fut_len+ open_xbt_fut_min_len+open_xrp_perp_len + open_xrp_fut_len  )
-		tickers_instrument= list( tickers_xbt_perp + tickers_xbt_fut+ tickers_xbt_fut_min+tickers_xrp_perp + tickers_xrp_fut  )
-
-		#instruments_list= (list((  deri)))#deri + xbt_CF + y) ))      
-
-		TEST=TEST+1
-		print((f" 9 {TEST}{datetime.now()} "))
 		 		
 		for fut in instruments_list:
-			#membagi deribit vs crypto facilities
-			
+			#membagi deribit vs crypto facilities			
 			deri_test	= 0 if (fut[:1] == 'p' or fut[:1]=='f') else 1
 			account         = account_CF #if deri_test == 0 else self.account_drbt(fut)
 
 			#mendapatkan nama akun deribit vs crypto facilities
 			sub_name        = 'CF' if deri_test == 0 else account ['username']#deri + xbt_CF + y) ))
-
-			QTY         = 10 if fut=='pi_xbtusd' else 10#	
 			nbids		=	1
 			nasks		=	1
-			nbids		=	5 if fut[3:][:3]=='xrp'else nbids
-			nasks		=	5 if fut[3:][:3]=='xrp'else nasks
-			FREQ 		= 10
-			FREQ		=	FREQ -	max(nasks,nbids)
-			QTY         = 5 if fut[3:][:3]=='xrp'else 1#
-				
-			n			=10
-			IDLE_TIME	=600	
-			IDLE_TIME	=int(IDLE_TIME/6)
-			place_bids 	= 'true'
-			place_asks 	= 'true'			
-
-			get_time	= client_public.public_get_time_get()['result']/1000
-			
-			counter= get_time - (stop_unix/1000)
-			ord_book              = self.get_bbo(fut)  if deri_test==0 else  self.get_bbo_drbt(futures,fut)
-#FIXME:			
-			print((f" 9A {TEST}{datetime.now()} "))
+			FREQ 		= 	2 if TRAINING  ==   True  else 10
+			FREQ		=	FREQ -	max(nasks,nbids)				
+			n			=	10		
+			QTY         = 3
+			IDLE_TIME 	= 480
+			get_time	= client_public.public_get_time_get()['result']/1000			
+			counter		= get_time - (stop_unix/1000)
 
 			[instrument]	= ['symbol'] if deri_test ==0 else ['instrument_name']
 			[unfilledSize]	= ['unfilledSize'] if deri_test ==0 else  ['size']		
@@ -743,11 +415,10 @@ class MarketMaker(object):
 			TICK			= ([o['tickSize']  for o in [o for o in get_instruments_CF if  
 								o['symbol']==fut]] [0]) if deri_test == 0 else (1/2)
 
+			QTY         = QTY if curr== 'xbt' else QTY * 3
+
 			filledOrder		=  [ o for o in [o for o in json.loads(cfPrivate.get_fills())[
 				'fills'] if o[instrument]==fut   ]]  #if deri_test == 0 else  self.filledOrder_drbt( fut ) 
-
-#FIXME:			
-			print((f" 9B {TEST}{datetime.now()} "))
 
 			position_CF_fut       = 0 if position_CF == 0 else [ o for o in[o for o in position_CF if o[
                     'symbol'][3:][:3]==fut [3:][:3]  ]]
@@ -758,10 +429,6 @@ class MarketMaker(object):
 			
 			position        = position_CF_fut if deri_test == 0 else (
 				client_account.private_get_position_get(fut)['result'])
-
-
-#FIXME:			
-			print((f" 9C {TEST}{datetime.now()} "))
 
 			openOrders_CF_fut           =[] if openOrders_CF ==[] else  (
 				 [ o for o in [o for o in openOrders_CF if o[
@@ -781,63 +448,30 @@ class MarketMaker(object):
 			perp_test   =perp_test_CF if deri_test ==0 else (1 if fut [-10:] == '-PERPETUAL' else 0)
 
 			fut_test_xbt =( 1 if ( xbt_fut[0] == fut   ) else 0 )
-			fut_test_xrp =( 1 if ( xrp_fut[0] ==fut  ) else 0 ) 
+
+			fut_test_xrp =  0 if TRAINING==True else ( 1 if ( xrp_fut[0] ==fut  ) else 0 ) 
 
 			fut_test_CF    =fut_test_xbt if curr== 'xbt' else fut_test_xrp
 
 			fut_test    =fut_test_CF# if deri_test==0 else (1 if stamp_new == fut  else 0)
 
-#FIXME:			
-			print((f" 9D{TEST}{datetime.now()} "))
-
-			#mendapatkan isi ekuitas deribit vs crypto facilities (ada/tidak collateral)
-			equity          = account_CF['balances']['xbt']
-			equity_test          = equity > 0
-
-			equity_test          =   equity_test if deri_test == 0 else (
-									account['equity'] >0 and account [
-										'currency']==fut [:3] )
-
-
-#FIXME:			
-			print((f" 9E {TEST}{datetime.now()} "))
-		
-			#mendapatkan atribut posisi  deribit vs crypto facilities 
-
-			#prc average
-			hold_avgPrc_buy		=	self.filter_two_var (positions,avgPrc,side,longs,instrument,fut,sum )
-
-			hold_avgPrc_sell    =  self.filter_two_var (positions,avgPrc,side,short,instrument,fut,sum )	
-
-			#menentukan kuantitas per posisi open per instrumen/total instrumen
-
-			hold_qty_buy		= self.filter_two_var (positions,size,side,longs,instrument,fut,sum ) 
-			hold_qty_sell		= self.filter_two_var (positions,size,side,short,instrument,fut,sum ) 
-  
-			hold_qty_buy_all		= self.filter_one_var (position_CF,size,side,longs,sum ) 
-  
-			hold_qty_sell_all		= abs(self.filter_one_var (position_CF,size,side,short,sum ))
-
-
-			openOrders_qty_buy_all=(sum([o[unfilledSize] for o in [o for o in openOrders_CF if o[side] == 'buy' ]])) 
-			openOrders_qty_sell_all=(sum([o[unfilledSize] for o in [o for o in openOrders_CF if o[side] == 'sell' ]])) 
-
 			#mendapatkan atribut riwayat transaksi deribit vs crypto facilities 								
-			print((f" 10 {TEST}{datetime.now()} "))
 
-			try:
-				filledOrders_sell_lastTime	=  (max([o[fillTime] for o in [
-												o for o in filledOrder if o[side] == 'sell' ]]))
+			filledOrders_sell_lastTime	=   self.filter_one_var (filledOrder,
+																		fillTime,
+																		side,
+																		'sell'
+																		)
 
-			except:
-				filledOrders_sell_lastTime 	= 0
+			filledOrders_sell_lastTime = 0 if filledOrders_sell_lastTime == [] else max (filledOrders_sell_lastTime)
 
-			try:
-				filledOrders_buy_lastTime	=  (max([o[fillTime] for o in [
-													o for o in filledOrder if o[side] == 'buy' ]]))
+			filledOrders_buy_lastTime	=   self.filter_one_var (filledOrder,
+																		fillTime,
+																		side,
+																		'buy'
+																		)
 
-			except:
-				filledOrders_buy_lastTime 	= 0
+			filledOrders_buy_lastTime = 0 if filledOrders_buy_lastTime == [] else max (filledOrders_buy_lastTime)
 
 			filledOrders_sell_lastTime_conv	= 0 if filledOrders_sell_lastTime == 0 else (
 												time_conversion ((
@@ -857,174 +491,319 @@ class MarketMaker(object):
 			filledOrders_oid_buy	=  0 if filledOrders_buy_lastTime ==0 else (([o['order_id'] for o in [o for o in filledOrder if  o[
 				fillTime] == filledOrders_buy_lastTime ]]))[0]
 
-			filledOrders_qty_sell	=sum (([o[size] for o in [o for o in filledOrder if o[side] == 'sell' and  o[
-				'order_id'] == filledOrders_oid_sell ]]))
-			
-			filledOrders_qty_buy	=sum (([o[size] for o in [o for o in filledOrder if o[side] == 'buy' and  o[
-				'order_id'] == filledOrders_oid_buy ]]))
+			filledOrders_qty_sell 	=   sum(self.filter_two_var (filledOrder,
+																size,
+																side,
+																'sell',
+																order_id,
+																filledOrders_oid_sell
+																))
 
-			filledOrders_qty_sell 	=  0 if filledOrders_qty_sell ==0 else filledOrders_qty_sell 
-
-			filledOrders_qty_buy    = 0 if filledOrders_qty_buy ==0 else filledOrders_qty_buy   
+			filledOrders_qty_buy 	=   sum(self.filter_two_var (filledOrder,
+																size,
+																side,
+																'buy',
+																order_id,
+																filledOrders_oid_buy
+																))
 
 			#mendapatkan atribut open order deribit vs crypto facilities 	  
-			filledOrders_prc_sell	=   ([ o[price] for o in [o for o in filledOrder if o[side]=='sell'  ]])
 
-			filledOrders_prc_buy	=  [o[price] for o in [o for o in filledOrder if o[side] == 'buy'  ]]
-
+			filledOrders_prc_sell	=   self.filter_one_var (filledOrder,
+															price,
+															side,
+															'sell'
+															)
 			filledOrders_prc_sell 	=  0 if filledOrders_prc_sell ==[] else filledOrders_prc_sell [0]
+
+			filledOrders_prc_buy	=   self.filter_one_var (filledOrder,
+															price,
+															side,
+															'buy'
+															)
 
 			filledOrders_prc_buy    = 0 if filledOrders_prc_buy ==[] else filledOrders_prc_buy [0]
 
-
-
 			try:				
-				open_limit			=  [ o for o in[o for o in openOrders if o[orderType]== limit ]]
-			except:
-				open_limit  		=0
-
-			try:				
-				open_limit_buy= [ o for o in[o for o in open_limit if o[side]== 'buy' ]]
+				open				=  [ o for o in[o for o in openOrders if o[orderType]== limit ]]
 
 			except:
-				open_limit_buy  =0
+				open  				=	0
 
 			try:				
-				open_limit_sell= [ o for o in[o for o in open_limit if o[side]== 'sell' ]]
+				open_buy			= [ o for o in[o for o in open if o[side]== 'buy' ]]
 
 			except:
-				open_limit_sell  =0
+				open_buy  			=	0
+
+			try:				
+				open_sell			= [ o for o in[o for o in open if o[side]== 'sell' ]]
+
+			except:
+				open_sell  			=	0
 
 			#menentukan kuantitas per  open order per instrumen
-			openOrders_qty_buy      =   (self.filter_one_var (openOrders,unfilledSize,side,'buy',sum ))
-			openOrders_qty_sell	    =	(self.filter_one_var (openOrders,unfilledSize,side,'sell',sum ))
+			openOrders_qty_buy      =   sum(self.filter_one_var (openOrders,
+															unfilledSize,
+															side,
+															'buy'
+															))
 
-			openOrders_time_buy	    =	self.filter_one_var (openOrders,last_update_timestamp,side,'buy',max )
-			openOrders_time_sell	=	self.filter_one_var (openOrders,last_update_timestamp,side,'sell',max )
+			openOrders_qty_sell	    =	sum(self.filter_one_var (openOrders,
+															unfilledSize,
+															side,
+															'sell'
+															))
 
-			try:				
-				open_limit_time_sell_max= [ o for o in[o for o in open_limit_sell if o[
-					last_update_timestamp]== openOrders_time_sell ]]
-			except:
-				open_limit_time_sell_max  =0
-
-			openOrders_prc_sell_limit_max= 0 if openOrders_time_sell==  [] else [ o[limitPrice] for o in [
-					o for o in open_limit_time_sell_max  ]] [0]
-
-			try:				
-				open_limit_time_buy_max= [ o for o in[o for o in open_limit_buy if o[
-					last_update_timestamp]== openOrders_time_buy ]]
-			except:
-				open_limit_time_buy_max  =0
-
-			openOrders_prc_buy_limit_max= 0 if openOrders_time_buy==  [] else [ o[limitPrice] for o in [
-					o for o in open_limit_time_buy_max  ]] [0]
+			openOrders_time_buy	    =	(self.filter_one_var (openOrders,
+															last_update_timestamp,
+															side,
+															'buy'
+															))
+			openOrders_time_buy = 0 if openOrders_time_buy == [] else max (openOrders_time_buy)
 
 
-			openOrders_time_buy_min	    =	self.filter_one_var (openOrders,last_update_timestamp,side,'buy',min )
-			openOrders_time_sell_min	=	self.filter_one_var (openOrders,last_update_timestamp,side,'sell',min )
+			openOrders_time_sell	=	(self.filter_one_var (openOrders,
+															last_update_timestamp,
+															side,
+															'sell'
+															))
 
-			openOrders_time_buy_conv= 0 if openOrders_time_buy== [] else ( 
+			openOrders_time_sell = 0 if openOrders_time_sell == [] else max (openOrders_time_sell)
+
+			openOrders_CF_fut           =[] if openOrders_CF ==[] else  (
+				 							[ o for o in [o for o in openOrders_CF if o[
+											instrument]==fut   ]]  ) if deri_test==0 else []											 
+
+			openOrders_time_buy_min	    =	self.filter_one_var (openOrders,
+																	last_update_timestamp,
+																	side,
+																	'buy'
+																	)
+			openOrders_time_buy_min = 0 if openOrders_time_buy_min == [] else min (openOrders_time_buy_min)
+
+
+			openOrders_time_sell_min	=	self.filter_one_var (openOrders,
+																	last_update_timestamp,
+																	side,
+																	'sell'
+																	)
+
+			openOrders_time_sell_min = 0 if openOrders_time_sell_min == [] else min (openOrders_time_sell_min)
+
+			openOrders_time_buy_conv= 0 if openOrders_time_buy== 0 else ( 
 				time_conversion( openOrders_time_buy) if deri_test == 0 else openOrders_time_buy)
 
-			openOrders_time_sell_conv=  0 if openOrders_time_sell== [] else (
+
+			openOrders_time_sell_conv=  0 if openOrders_time_sell== 0 else (
 				time_conversion( openOrders_time_sell) if deri_test == 0 else openOrders_time_sell)
 
-			openOrders_time_buy_conv_min= 0 if openOrders_time_buy== [] else ( 
-				time_conversion( openOrders_time_buy_min) if deri_test == 0 else openOrders_time_buy_min)
-
-			openOrders_time_sell_conv_min=  0 if openOrders_time_sell== [] else (
-				time_conversion( openOrders_time_sell_min) if deri_test == 0 else openOrders_time_sell_min)
-
-
 			try:				
-				open_limit_time_buy= [ o for o in[o for o in open_limit_buy if o[
+				open_time_buy= [ o for o in[o for o in open_buy if o[
 					last_update_timestamp]== openOrders_time_buy_min ]]
 			except:
-				open_limit_time_buy  =0
+				open_time_buy  =0
 
 			try:				
-				open_limit_time_sell= [ o for o in[o for o in open_limit_sell if o[
+				open_time_sell= [ o for o in[o for o in open_sell if o[
 					last_update_timestamp]== openOrders_time_sell_min ]]
 			except:
-				open_limit_time_sell  =0
-
-
+				open_time_sell  =0
 
 			try:				
-				open_limit_time_buy_min= [ o for o in[o for o in open_limit_buy if o[
+				open_time_buy_min= [ o for o in[o for o in open_buy if o[
 					last_update_timestamp]== openOrders_time_buy ]]
 			except:
-				open_limit_time_buy_min  =0
+				open_time_buy_min  =0
 
 			try:				
-				open_limit_time_sell_min= [ o for o in[o for o in open_limit_sell if o[
+				open_time_sell_min= [ o for o in[o for o in open_sell if o[
 					last_update_timestamp]== openOrders_time_sell ]]
 			except:
-				open_limit_time_sell_min  =0
+				open_time_sell_min  =0
 
-			openOrders_prc_buy_limit= 0 if openOrders_time_buy== [] else ([ o[limitPrice] for o in [
-					o for o in open_limit_time_buy  ]])[0]
+			openOrders_prc_buy= 0 if open_time_buy== [] else ([ o[limitPrice] for o in [
+					o for o in open_time_buy  ]])[0]
 
-			openOrders_oid_buy_limit= 0 if openOrders_time_buy== []  else ([ o[order_id] for o in [
-					o for o in open_limit_time_buy  ]])[0]
+			openOrders_qty_buy_limitLen=  0 if open_buy== [] else len ([o[
+			unfilledSize] for o in [o for o in open_buy]]  )
 
-			openOrders_oid_sell_limit=  0 if openOrders_time_sell== []  else ([ o[order_id] for o in [
-					o for o in open_limit_time_sell  ]])[0]	
+			openOrders_qty_sell_limitLen= 0 if open_sell== [] else len ([o[
+			unfilledSize] for o in [o for o in open_sell ]]  )			
 
-			openOrders_oid_buy_limit_min= 0 if openOrders_time_buy_min== []  else ([ o[order_id] for o in [
-					o for o in open_limit_time_buy_min  ]])[0]
+			print(fut,'openOrders_qty_sell_limitLen',openOrders_qty_sell_limitLen)
+			print('openOrders_qty_buy_limitLen',openOrders_qty_buy_limitLen)
 
-			openOrders_oid_sell_limit_min=  0 if openOrders_time_sell_min== []  else ([ o[order_id] for o in [
-					o for o in open_limit_time_sell_min  ]])[0]	
+			openOrders_time_sell_max1=0
+			
+			openOrders_oid_sell_max2=0
+			
+			openOrders_oid_buy_max1=0
+			
+			openOrders_oid_buy_max2=0
+			
+#!#####    			
+			if openOrders_qty_buy_limitLen > (QTY - nbids):
+    				
+				openOrders_buy_minmax= 0 if openOrders_time_buy== 0 else sorted ([ o['receivedTime'] for o in [
+						o for o in open_buy  ]])
 
-			openOrders_prc_sell_limit= 0 if openOrders_time_sell==  [] else [ o[limitPrice] for o in [
-					o for o in open_limit_time_sell  ]] [0]
+				openOrders_time_buy_max1= 0 if openOrders_buy_minmax == 0 else  openOrders_buy_minmax[0]
+				
+				openOrders_time_buy_max2=  0 if openOrders_buy_minmax == 0 else  openOrders_buy_minmax[1]
+
+				openOrders_oid_buy_max2= 0 if openOrders_buy_minmax == 0  else ([ o[order_id] for o in [
+						o for o in open_buy  if o['receivedTime']== openOrders_time_buy_max2 ]])[0]
+
+				openOrders_oid_buy_max1= 0 if openOrders_buy_minmax ==0  else ([ o[order_id] for o in [
+						o for o in open_buy  if o['receivedTime']== openOrders_time_buy_max1 ]])[0]
+	#!!!!!!
+				openOrders_qty_buy_max2= 0 if openOrders_buy_minmax == 0 else ([ o[unfilledSize] for o in [
+						o for o in open_buy  if o['receivedTime']== openOrders_time_buy_max2 ]])[0]
+
+				openOrders_qty_buy_max1= 0 if openOrders_buy_minmax == 0 else ([ o[unfilledSize] for o in [
+						o for o in open_buy  if o['receivedTime']== openOrders_time_buy_max1 ]])[0]
+
+			if openOrders_qty_sell_limitLen > (QTY - nbids):
+
+				openOrders_sell_minmax= 0 if openOrders_time_sell== [] else sorted ([ o['receivedTime'] for o in [
+						o for o in open_sell  ]])
+
+				openOrders_time_sell_max1=  0 if openOrders_sell_minmax == []  else  openOrders_sell_minmax[0]
+
+				openOrders_time_sell_max2=  0 if openOrders_sell_minmax == [] else  openOrders_sell_minmax[1]
+
+				openOrders_oid_sell_max2= 0 if openOrders_sell_minmax == []  else ([ o[order_id] for o in [
+						o for o in open_sell  if o['receivedTime']== openOrders_time_sell_max2 ]])[0]
+
+				openOrders_oid_sell_max1= 0 if openOrders_sell_minmax == []   else ([ o[order_id] for o in [
+						o for o in open_sell  if o['receivedTime']== openOrders_time_sell_max1 ]])[0]
+
+				openOrders_qty_sell_max1= 0 if openOrders_sell_minmax == [] else ([ o[unfilledSize] for o in [
+						o for o in open_sell  if o['receivedTime']== openOrders_time_sell_max1 ]])[0]
+
+				openOrders_qty_sell_max2= 0 if openOrders_sell_minmax == [] else ([ o[unfilledSize] for o in [
+						o for o in open_sell  if o['receivedTime']== openOrders_time_sell_max2 ]])[0]    
+
+			
+			
+			cancel_test		=  (abs(openOrders_qty_sell_limitLen) + openOrders_qty_buy_limitLen) >= FREQ 
+			cancel_fut_test		=  abs(openOrders_qty_sell_limitLen) >= FREQ or (cancel_test and max (
+									openOrders_qty_buy_limitLen,abs(openOrders_qty_sell_limitLen))== abs(openOrders_qty_sell_limitLen))
+			
+			cancel_perp_test	=  openOrders_qty_buy_limitLen >= FREQ or (cancel_test and max (
+									openOrders_qty_buy_limitLen,abs(openOrders_qty_sell_limitLen))==openOrders_qty_buy_limitLen)
+
+			print('cancel_fut_test',cancel_fut_test,'cancel_perp_test',cancel_perp_test)
+			if  cancel_fut_test == True or cancel_perp_test == True   :	
+					
+				if  openOrders_time_sell_max1 != 0:
+					
+					edit 		= {
+					"orderId": openOrders_oid_sell_max1,
+					"size": openOrders_qty_sell_max1 + openOrders_qty_sell_max2,
+					}
+					
+					print(BLUE + str((fut,'555B','qty',openOrders_qty_sell_max1 + openOrders_qty_sell_max2,
+										'openOrders_oid_sell_max1',
+										openOrders_oid_sell_max1,'openOrders_qty_sell_max2',openOrders_qty_sell_max2,
+										cfPrivate.edit_order(
+										edit) if deri_test == 0 else (
+										client_trading.private_cancel_get(
+										openOrders_oid_buy_limitBal)))),ENDC)
+
+				if  openOrders_oid_sell_max2 != 0:
+					
+					print(BLUE + str((fut,'openOrders_oid_sell_max2',
+										openOrders_oid_sell_max2,
+										cfPrivate.cancel_order(
+										openOrders_oid_sell_max2) if deri_test == 0 else (
+										client_trading.private_cancel_get(
+										openOrders_oid_sell_max2)))),ENDC)
+
+				if  openOrders_oid_buy_max1 != 0 :
+					
+					edit 		= {
+					"orderId": openOrders_oid_buy_max1,
+					"size":openOrders_qty_buy_max2 + openOrders_qty_buy_max1,
+					}
+
+					print(BLUE + str((fut,'555D','openOrders_oid_buy_max1',
+									openOrders_oid_buy_max1,'openOrders_qty_buy_max2',openOrders_qty_buy_max2,
+									'openOrders_qty_buy_max1',openOrders_qty_buy_max1,
+									openOrders_qty_buy_max2 + openOrders_qty_buy_max1,
+									cfPrivate.edit_order(edit) if deri_test == 0 else (
+									client_trading.private_cancel_get(
+									openOrders_oid_sell_limitBal)))),ENDC)
+																			
+				if  openOrders_oid_buy_max2 != 0 :
+					print(BLUE + str((fut,'555C','openOrders_oid_buy_max2',
+									openOrders_oid_buy_max2,cfPrivate.cancel_order(
+									openOrders_oid_buy_max2) if deri_test == 0 else (
+									client_trading.private_cancel_get(
+									openOrders_oid_buy_max2)))),ENDC)
+
+			openOrders_oid_buy= 0 if openOrders_time_buy==0  else ([ o[order_id] for o in [
+					o for o in open_time_buy  ]])[0]
+
+			openOrders_oid_sell=  0 if openOrders_time_sell== 0 else ([ o[order_id] for o in [
+					o for o in open_time_sell  ]])[0]	
+
+			openOrders_oid_buy_min= 0 if openOrders_time_buy_min== 0  else ([ o[order_id] for o in [
+					o for o in open_time_buy_min  ]])[0]
+
+			openOrders_oid_sell_min=  0 if openOrders_time_sell_min==0  else ([ o[order_id] for o in [
+					o for o in open_time_sell_min  ]])[0]	
+
+			openOrders_prc_sell= 0 if openOrders_time_sell==  0 else [ o[limitPrice] for o in [
+					o for o in open_time_sell  ]] [0]
 
 			#menghitung kuantitas limit order per instrumen
 #openOrders_time_sell 
 			#qty individual
-			openOrders_qty_sell_limit  = 0 if open_limit_time_sell== [] else [ o[unfilledSize] for o in [
-					o for o in open_limit_time_sell  ]] [0]
+			openOrders_qty_sell  = 0 if open_time_sell== [] else [ o[unfilledSize] for o in [
+					o for o in open_time_sell  ]] [0]
 
-			openOrders_qty_buy_limit  =  0 if openOrders_time_buy== [] else [ o[unfilledSize] for o in [
-					o for o in open_limit_time_buy ]] [0]
-			openOrders_qty_sell_limit_sum  = 0 if open_limit_sell== [] else sum ([ o[unfilledSize] for o in [
-					o for o in open_limit_sell]] )
+			openOrders_qty_buy  =  0 if openOrders_time_buy==0 else [ o[unfilledSize] for o in [
+					o for o in open_time_buy ]] [0]
 
-			openOrders_qty_buy_limit_sum  = 0 if open_limit_buy== []else sum ([ o[unfilledSize] for o in [
-					o for o in open_limit_buy]] )
+			openOrders_qty_sell_sum  = 0 if open_sell== [] else sum ([ o[unfilledSize] for o in [
+					o for o in open_sell]] )
 
-			openOrders_qty_buy_limitLen=  0 if open_limit_buy== [] else len ([o[
-			unfilledSize] for o in [o for o in open_limit_buy]]  )
+			openOrders_qty_buy_sum  = 0 if open_buy== []else sum ([ o[unfilledSize] for o in [
+					o for o in open_buy]] )
 
-			openOrders_qty_sell_limitLen= 0 if open_limit_sell== [] else len ([o[
-			unfilledSize] for o in [o for o in open_limit_sell ]]  ) *-1
-			#balancing saldo
+			openOrders_qty_buyQTY= 0 if open_buy== [] else sum (self.filter_two_var (open_buy,
+																					unfilledSize,
+																					unfilledSize,
+																					QTY,
+																					last_update_timestamp,
+																					openOrders_time_buy
+																					))
 
-			openOrders_oid_sell_limitBal=  0 if open_limit_sell== [] else max([o[unfilledSize] for o in [o for o in open_limit_sell   ]]  )
+			openOrders_qty_sellQTY= 0 if open_sell== [] else sum (self.filter_two_var (open_sell,
+																					unfilledSize,
+																					unfilledSize,
+																					QTY,
+																					last_update_timestamp,
+																					openOrders_time_sell
+																					))
 
-			openOrders_oid_sell_limitBal=  0 if openOrders_oid_sell_limitBal== 0 else (([o[order_id] for o in [o for o in open_limit_sell if  (
-				o[unfilledSize])  ==openOrders_oid_sell_limitBal ]]  )[0])
+			openOrders_oid_sellBal=  0 if open_sell== [] else max([o[unfilledSize] for o in [o for o in open_sell   ]]  )
+
+			openOrders_oid_sellBal=  0 if openOrders_oid_sellBal== 0 else (([o[order_id] for o in [o for o in open_sell if  (
+				o[unfilledSize])  ==openOrders_oid_sellBal ]]  )[0])
 				
-			openOrders_buy_oid_limitBal=  0 if open_limit_buy== []  else max([o[unfilledSize] for o in [o for o in open_limit_buy   ]]  )
+			openOrders_buy_oidBal=  0 if open_buy== []  else max([o[unfilledSize] for o in [o for o in open_buy   ]]  )
 
-			openOrders_oid_buy_limitBal=  0 if openOrders_buy_oid_limitBal== 0 else (([o[order_id] for o in [o for o in open_limit_buy if  (
-				o[unfilledSize])  ==openOrders_buy_oid_limitBal ]]  )[0])
+			openOrders_oid_buyBal=  0 if openOrders_buy_oidBal== 0 else (([o[order_id] for o in [o for o in open_buy if  (
+				o[unfilledSize])  ==openOrders_buy_oidBal ]]  )[0])
 
-			#menghitung waktu stop order per instrumen ada di platform
-				#maks stop order 20
+			openOrders_qty_sell_filled=   0 if open_sell== [] else ([o[
+			'filledSize'] for o in [o for o in open_sell  ]]  )[0]
 
-
-			openOrders_qty_sell_filled=   0 if open_limit_sell== [] else ([o[
-			'filledSize'] for o in [o for o in open_limit_sell  ]]  )[0]
-
-			openOrders_qty_buy_filled=  0 if open_limit_buy== [] else ([o[
-			'filledSize'] for o in [o for o in open_limit_buy]]  ) [0]
-
-			#PILIHAN INSTRUMEN
-			#perpetual= diarahkan posisi sell karena funding cenderung berada di sell
-			#lawannya, future dengan tanggal jatuh tempo terlama (mengurangi resiko forced sell)-->1
+			openOrders_qty_buy_filled=  0 if open_buy== [] else ([o[
+			'filledSize'] for o in [o for o in open_buy]]  ) [0]
 
 				#menghitung waktu open di order book
 
@@ -1035,7 +814,7 @@ class MarketMaker(object):
 			open_time_sell = 0 if openOrders_time_sell == 0 else (
 					openOrders_time_sell_conv if deri_test == 0 else (start_unix/1000- (
 						openOrders_time_sell)/1000))
-		
+
 				#menghitung waktu terakhir kali order dieksekusi
 			filled_time_buy = 0 if filledOrders_buy_lastTime == 0 else (
 					filledOrders_buy_lastTime_conv if deri_test == 0 else (start_unix/1000- (
@@ -1045,57 +824,6 @@ class MarketMaker(object):
 					filledOrders_sell_lastTime_conv if deri_test == 0 else (start_unix/1000- (
 						filledOrders_sell_lastTime)/1000))
 
-			IDLE_TIME=600
-			#FIXME:
-			QTY=int(round(sum([ o['last'] for o in[o for o in tickers if (
-							o['symbol']=='in_xbtusd') ]]) * equity *10/100))
-			
-			QTY         = QTY *2 if fut[3:][:3]=='xrp'else QTY
-
-
-
-			if  perp_test == True and abs(hold_qty_sell) <  (QTY * 4):
-				QTY = int(round(QTY * 3/2)) 
-	
-			elif  fut_test == True and abs(hold_qty_buy) <  (QTY * 4):
-				QTY = int(round(QTY * 3/2)) 
-			else:
-				QTY = QTY
-			print(fut,QTY)
-
-
-			if  abs (hold_qty_sell) == QTY:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *20)
-			elif  abs (hold_qty_sell) <= QTY*20:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *40)
-			elif  abs (hold_qty_sell) <= QTY*40:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *80)
-			elif  abs (hold_qty_sell) <= QTY*80:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *160)
-			elif  abs (hold_qty_sell) <= QTY*160:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *320)
-			elif  abs (hold_qty_sell) <= QTY*320:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *640)
-			else:
-				IDLE_TIME = 0
-
-			if  abs (hold_qty_buy) == QTY:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *20)
-			elif  abs (hold_qty_buy) <= QTY*20:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *40)
-			elif  abs (hold_qty_buy) <= QTY*40:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *80)
-			elif  abs (hold_qty_buy) <= QTY*80:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *160)
-			elif  abs (hold_qty_buy) <= QTY*160:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *320)
-			elif  abs (hold_qty_buy) <= QTY*320:
-				IDLE_TIME = IDLE_TIME + (IDLE_TIME * one_pct *640)
-			else:
-				IDLE_TIME = 0
-						#batasan transaksi
-
-			 
 			delta_time_buy= max (filled_time_buy,open_time_buy)  if (
 				filled_time_buy == 0 or open_time_buy ==0) else min (
 					filled_time_buy,open_time_buy)
@@ -1104,429 +832,151 @@ class MarketMaker(object):
 				filled_time_sell ==0 or open_time_sell==0) else min (
 					filled_time_sell,open_time_sell)
 
-			IDLE_TIME = (IDLE_TIME*2/3) if (hold_qty_buy < 10 )else IDLE_TIME
-			IDLE_TIME = (IDLE_TIME*2/3) if  abs(hold_qty_sell) < 10  else IDLE_TIME
+			test_time_fut	=	delta_time_buy > IDLE_TIME
+			test_time_perp	=	delta_time_sell > IDLE_TIME
 
 
-			
-			print(fut,datetime.now(),'delta_time_buy',delta_time_buy,'delta_time_sell',delta_time_sell,'IDLE_TIME',IDLE_TIME)
-			print(fut,'filled_time_buy',filled_time_buy,'open_time_buy',open_time_buy)
-			print(fut,'filled_time_sell',filled_time_sell,'open_time_sell',open_time_sell)
-			print(fut,'hold_qty_buy < 10',hold_qty_buy < 10,'abs(hold_qty_sell < 10)',abs(hold_qty_sell) < 10,(hold_qty_buy < 10 or abs(hold_qty_sell) < 10)==True )
+			#order tidak dieksekusi > IDLE_TIME
+			if   perp_test==1 and openOrders_oid_sell != 0  and (
+				openOrders_qty_sell==QTY and open_time_sell > (IDLE_TIME-20)): 													
+	
+					print(BLUE + str((fut,'open time > idle time',open_time_buy,cfPrivate.cancel_order(
+						openOrders_oid_sell) if deri_test == 0 else (
+						client_trading.private_cancel_get(openOrders_oid_sell)))),ENDC)
 
+			print(fut,'open_time_buy',open_time_buy,IDLE_TIME,openOrders_oid_buy)
+			if    fut_test==1  and openOrders_oid_buy !=0 and (
+				openOrders_qty_buy==QTY and open_time_buy > (IDLE_TIME-20)) :                                                   
+
+					print(BLUE + str((fut,'open time > idle time',open_time_sell,cfPrivate.cancel_order(
+						openOrders_oid_buy) if deri_test == 0 else (
+						client_trading.private_cancel_get(openOrders_oid_buy)))),ENDC)			
+	
+#! seluruh kondisi hanya bosa terpenuhi 1 kali
+#? kondisi 0, oke untuk perp & fut? perp masih pesan berkali2
 #FIXME:
+#                   mulai          > 10 menit no transaction         
+			test_time_buy_beg 	= delta_time_buy > IDLE_TIME or delta_time_buy == 0
+			test_time_sell_beg 	=	 delta_time_sell > IDLE_TIME or delta_time_sell ==0
 
-			qty_imbalance_sell 		=	abs(hold_qty_sell_all) -  openOrders_qty_buy_all  #4 menjamin order sell maks = order buy
-			qty_imbalance_buy 	=	abs(hold_qty_buy_all) -  openOrders_qty_sell_all  #4 menjamin order sell maks = order buy
+			print(fut,'delta_time_sell',delta_time_sell,'delta_time_buy',delta_time_buy )
+			print(CYAN + str((fut,'test_time_buy_beg',test_time_buy_beg,'test_time_sell_beg',test_time_sell_beg)),ENDC)
+			openOrders_qty_buyQTY
+#FIXME:
+#                   test transaksi terakhir, buy/sell?                   
+			test_time_buy_filled 	=	filledOrders_buy_lastTime_conv < filledOrders_sell_lastTime_conv and test_time_buy_beg == False#!
+			test_time_sell_filled 	=	filledOrders_sell_lastTime_conv < filledOrders_buy_lastTime_conv and test_time_sell_beg == False
+
+#? test apakah transaksi terakhir tersebut sudah pernah dibuatkan lawannya?                   
+			test_time_sell_open 	=	 openOrders_time_sell_conv > filledOrders_buy_lastTime_conv or openOrders_time_sell_conv == 0 #!
+			test_time_buy_open 	=	 openOrders_time_buy_conv > filledOrders_sell_lastTime_conv or openOrders_time_buy_conv == 0
+
+#?bila transaksi terakhir adalah beli, maka harus jual kembali
+			test_sell_perp 	=	test_time_buy_filled and test_time_sell_open 
+
+#? bila transaksi terakhir adalah jual, maka harus beli kembali
+			test_buy_fut 	=	test_time_sell_filled and test_time_buy_open 
+
+
+			print(fut,'openOrders_time_sell',openOrders_time_sell,'openOrders_time_sell_conv',openOrders_time_sell_conv )
 			
-			test_qty_zero_fut =  ((hold_qty_buy ==0 and openOrders_qty_buy_limit == 0))
+			print(fut,'openOrders_time_buy',openOrders_time_buy,'openOrders_time_buy_conv',openOrders_time_buy_conv )
+			print(fut,'filledOrders_sell_lastTime',filledOrders_sell_lastTime,'filledOrders_sell_lastTime_conv',filledOrders_sell_lastTime_conv )
+
+#? menentukan prc
+			prc =0
+
+
+			if (test_time_sell_filled and test_time_buy_open) or (fut_test==1 and test_time_buy_beg ) or (
+				(test_time_buy_filled and test_time_sell_open) or (perp_test==1 and test_time_sell_beg )):													
+				ord_book        = 	self.get_bbo_CF (fut)  if deri_test==0 else  self.get_bbo_drbt(futures,fut)
 			
-			test_time_fut	=delta_time_buy > IDLE_TIME
-			
-			test_qty_zero_perp	=hold_qty_sell ==0 and abs(openOrders_qty_sell_limit) ==0
-
-			test_time_perp=delta_time_sell > IDLE_TIME
-
-			fut_order=  ( test_time_perp == True )  or (test_qty_zero_perp ==True)
-
-			perp_order=  test_time_fut == True   or (test_qty_zero_fut ==True )
-
-			print((f" 11 {TEST}{datetime.now()} "))
-				
-			if (qty_imbalance_sell ==0 and qty_imbalance_buy== 0) and (fut_order==False and perp_order==False)  :
-				while True:
-					print(fut,'sys.exit()',sys.exit())
-					sys.exit()
-				break
-			 
-			print((f" 12 {TEST}{datetime.now()} "))
-
-			bid_oke=False
-			ask_oke=False
-			test_time_fut=False
-			test_time_perp =False
-
-			if test_time_fut ==True or test_time_perp == True:
-
-				end_point_btc='https://www.deribit.com/api/v2/public/get_tradingview_chart_data'
-				endpoint_xrp='https://api.kraken.com/0/public/OHLC?pair=xxrpxxbt&interval=15' 
-				
-				df				=	self.DF(end_point_btc) if curr =='xbt' else self.DF_XRP(endpoint_xrp)
-
-				df=pd.DataFrame(df,self.RSI(df))
-				RSI			=abs((df['RSI'].tail(1).values.tolist() [0]) )
-
-				print((f" 12AA {TEST}{datetime.now()} "))
-		
-				df['HMA']		= 	self.WMA(2 * self.WMA(df['close'], int(n/2)) - self.WMA(df['close'], n), int(np.sqrt(n)))
-				print((f" 12AB {TEST}{datetime.now()} "))
-
-				df['up']		=	df['HMA'] .diff()
-
-				print((f" 12AC {TEST}{datetime.now()} "))
-
-				hma_net			=int(df['up'].tail(1).values.tolist() [0]) 
-				print((f" 12A {TEST}{datetime.now()} "))
-				
-				bid_oke			=True if (RSI <41 ) else False
-				ask_oke			=True if (RSI > 59 )else False
-				print((f" 12B {TEST}{datetime.now()} "))
-
-				hma_prc_buy		=	( abs(hma_net)  if curr =='xbt' else abs(hma_net)/XRP_ROUND )   if bid_oke==True else 0
-				hma_prc_sell	= 	( abs(hma_net)   if curr =='xbt' else abs(hma_net)/XRP_ROUND )  if ask_oke==True else 0
-
-			qty_imbal_perp 		=	abs(hold_qty_sell) -  openOrders_qty_buy_limit_sum  #4 menjamin order sell maks = order buy
-			qty_imbal_fut 	=	abs(hold_qty_buy) -  openOrders_qty_sell_limit_sum  #4 menjamin order sell maks = order buy
-			bid_prc=0
-			ask_prc=0
-			test_time_fut	=delta_time_buy > IDLE_TIME
-			test_time_perp=delta_time_sell > IDLE_TIME
-				
-			if test_time_fut ==True  or qty_imbal_perp !=0 or delta_time_buy ==0 or test_qty_zero_fut == True:
+			if (test_time_sell_filled and test_time_buy_open) or (fut_test==1 and test_time_buy_beg ):													
 				bid_prc         = ord_book['ask'] - TICK
 				
-			if test_time_perp ==True or qty_imbal_fut !=0  or delta_time_sell ==0 or test_qty_zero_perp ==True:
+			if (test_time_buy_filled and test_time_sell_open) or (perp_test==1 and test_time_sell_beg ):													
 				ask_prc         = ord_book['bid'] + TICK
-			
-			print((f" bid_oke {bid_oke} ask_oke {ask_oke} "))
-
-			print((f" bid_prc {bid_prc} ask_prc {ask_prc} "))
-
-			print((f" 13 {TEST}{datetime.now()} "))
-
-			#order tidak dieksekusi >280 detik
-			#seluruh stop limit yg belum ditrigger
-			#limit, sesuai dengan lawan masing2 default
-
-			if ((abs(openOrders_qty_sell_limit_sum) ) > hold_qty_buy) and fut_test==1 and hold_qty_buy != 0:
 				
-				if openOrders_oid_sell_limit  !=0:	
-	
-					print(BLUE + str((fut,'open > hold',cfPrivate.cancel_order(openOrders_oid_sell_limit) if deri_test == 0 else (
-						client_trading.private_cancel_get(openOrders_oid_sell_limit)))),ENDC)
+			if (test_time_sell_filled and test_time_buy_open)  :													
+				prc=		prc + min(bid_prc,(filledOrders_prc_sell - TICK))
 
-			if ((abs(openOrders_qty_buy_limit_sum) ) > abs(hold_qty_sell)) and perp_test==1 and hold_qty_sell != 0:
-
-				if openOrders_oid_buy_limit  !=0:						
-	
-					print(BLUE + str((fut,'open > hold',cfPrivate.cancel_order(openOrders_oid_buy_limit) if deri_test == 0 else (
-						client_trading.private_cancel_get(openOrders_oid_buy_limit)))),ENDC)
-
-			if  (fut_test==1 and open_time_buy >IDLE_TIME/2) or (perp_test==1 and open_time_sell >IDLE_TIME/2) :# hanya berlaku bagi beli/jual, bukan lawan transaksi
-
-				if perp_test==1 and openOrders_oid_sell_limit != 0  : 													
-	
-					print(BLUE + str((fut,'open time > idle time',cfPrivate.cancel_order(openOrders_oid_sell_limit) if deri_test == 0 else (
-						client_trading.private_cancel_get(openOrders_oid_sell_limit)))),ENDC)
-
-				if fut_test==1  and openOrders_oid_buy_limit !=0:                                                   
-
-					print(BLUE + str((fut,'open time > idle time',cfPrivate.cancel_order(openOrders_oid_buy_limit) if deri_test == 0 else (
-						client_trading.private_cancel_get(openOrders_oid_buy_limit)))),ENDC)
-
-
-			cancel_fut_test		=  abs(openOrders_qty_sell_limitLen) >= FREQ and openOrders_time_sell_conv_min > (IDLE_TIME * FREQ)
-			
-			cancel_perp_test	=  openOrders_qty_buy_limitLen >= FREQ and openOrders_time_buy_conv_min > (IDLE_TIME *FREQ)
-
-			if  cancel_fut_test == True or cancel_perp_test == True   :	
-
-				if perp_test==1 : 	
-					
-					if  openOrders_oid_buy_limit_min != 0:
-						
-						print(BLUE + str((fut,'open qty > freq',openOrders_qty_buy_limitLen,cfPrivate.cancel_order(openOrders_oid_buy_limit_min) if deri_test == 0 else (
-						client_trading.private_cancel_get(openOrders_oid_buy_limit_min)))),ENDC)
-
-					if  openOrders_oid_buy_limitBal != 0:
-						
-						print(BLUE + str((fut,'open qty > freq',openOrders_qty_buy_limitLen,cfPrivate.cancel_order(openOrders_oid_buy_limitBal) if deri_test == 0 else (
-						client_trading.private_cancel_get(openOrders_oid_buy_limitBal)))),ENDC)
-
-				if fut_test==1 : 													
-
-					if  openOrders_oid_sell_limit_min != 0 :
-						
-						print(BLUE + str((fut,'open qty > freq',cfPrivate.cancel_order(openOrders_oid_sell_limit_min) if deri_test == 0 else (
-						client_trading.private_cancel_get(openOrders_oid_sell_limit_min)))),ENDC)
-
-															
-					if  openOrders_oid_sell_limitBal != 0 :
-  						
-						print(BLUE + str((fut,'open qty > freq',cfPrivate.cancel_order(openOrders_oid_sell_limitBal) if deri_test == 0 else (
-						client_trading.private_cancel_get(openOrders_oid_sell_limitBal)))),ENDC)
-
-			default_order_limit = {
-								"orderType": "post",
-								"symbol": fut.upper(),
-								"reduceOnly": "false"
-								}
-			
-			stop_order = {
-				"orderType": "stp",
-				"symbol": fut.upper(),
-				"limitPrice": 1.00,
-				"stopPrice": 2.00,
-				"cliOrdId": "my_stop_client_id"
-				}
-
-			place_bids  =  equity_test==True  
-			place_asks  =   equity_test==True 
-
-
-#TODO:'place_bids'
-			if place_bids:
-
-				default_order_limit= (dict(default_order_limit,**{"side": "buy"}))
-				default_order_stop= (dict(default_order_limit,**{"side": "buy"}))
-
-				stop_prc_perp=   max( ask_prc ,( float(openOrders_prc_sell_limit+TICK ) ) )
-
-				if   perp_test==1 :
-					
-					test_time		=	(filledOrders_sell_lastTime_conv < openOrders_time_buy_conv or openOrders_time_buy_conv ==0) and (
-						filledOrders_sell_lastTime_conv < IDLE_TIME*5
-					)
-															
-					test_qty_sum_perp 	=	abs(hold_qty_sell) >  openOrders_qty_buy_limit_sum and abs(
-										hold_qty_sell) > 0  and filledOrders_qty_sell <= QTY  #4 menjamin order sell maks = order buy					
-					
-					#round(hold_avgPrc_sell*(2/100),8)
-
-					xrp_prc=float(self.truncate(hold_avgPrc_sell,8))
-					xrp_margin= int((hold_avgPrc_sell * (one_pct ))/TICK) * TICK											
-					xrp_prc=  float(self.truncate((xrp_prc - xrp_margin ),8)) 
-
-					prc_imbal 		=	 min(bid_prc, int(hold_avgPrc_sell-(hold_avgPrc_sell * one_pct  )) if curr=='xbt' else  xrp_prc)
-										
-					test_qty_freq 	=  openOrders_qty_buy_limitLen < FREQ#3 boleh sampai 5 misalnnya
-
-					prc_limit		=	bid_prc if filledOrders_prc_sell ==0 else min(bid_prc ,int(filledOrders_prc_sell  - (TICK*2)) if curr== 'xbt' else (
-						 filledOrders_prc_sell  - TICK))
-
-#NORMAL,  limit seketika setelah eksekusi order
-
-					if (test_qty_sum_perp == True  and test_time == True ):													
-
-						print(GREEN + str((fut,'#NORMAL, bila limit diekseskusi','test_qty_sum_perp',test_qty_sum_perp,
-						'test_time',test_time,'filledOrders_sell_lastTime_conv', filledOrders_sell_lastTime_conv,
-						'openOrders_time_buy_conv',  openOrders_time_buy_conv,'IDLE_TIME',IDLE_TIME,'prc_limit',prc_limit,'filledOrders_prc_sell',filledOrders_prc_sell,
-						)),ENDC)
-						if deri_test == 1 and qty_imbal_perp !=0:
-
-							client_trading.private_buy_get(
-							instrument_name =fut,
-								reduce_only	='false',
-								type		=limit,
-								price		=prc_limit,
-								post_only		='true',
-								amount			=abs(filledOrders_qty_sell)
-							)	
-
-						if deri_test == 0 and qty_imbal_perp !=0:
-									
-							print(GREEN + str((fut,cfPrivate.send_order_1(dict(default_order_limit,**{"size": abs(filledOrders_qty_sell),"limitPrice":prc_limit}))
-						)),ENDC)
-
-#pengimbang saldo sell, sisa apa pun, dimasukkan ke average 						
-					elif  test_qty_sum_perp  ==True :											
-
-						qty=abs(filledOrders_qty_sell)
-
-						print(GREEN + str((fut,'#pengimbang AVG DOWN','hold_qty_sell',abs(hold_qty_sell),
-						'(abs(hold_qty_sell)-abs(openOrders_qty_buy_limit)) >= 0','qty_imbal_perp',qty_imbal_perp,
-						(abs(hold_qty_sell)-abs(openOrders_qty_buy_limit)) > 0,
-						abs(openOrders_qty_buy_limit),'test_qty_sum_perp ',test_qty_sum_perp,'cancel_perp_test',cancel_perp_test )),ENDC)
-
-						if deri_test == 1 :
-
-							client_trading.private_buy_get(
-							instrument_name =fut,
-							reduce_only     ='false',
-							type            =limit,
-							price           =prc_imbal,#seharusnya prc_net ,
-							post_only       ='true',
-							amount          =qty_imbal_perp,
-							)	
-
-						if deri_test == 0 :
-
-							print(GREEN + str((fut,cfPrivate.send_order_1(dict(default_order_limit,**{"size": qty_imbal_perp,"limitPrice":prc_imbal}))
-						)),ENDC)
-
-#NORMAL,, pasang posisi beli pada QTY =0/avg down  					                                                   							
-				elif  fut_test==1 and (openOrders_qty_buy == 0 or  openOrders_qty_buy_filled !=0):
-
-					if  test_time_fut == True   or (test_qty_zero_fut ==True ) or delta_time_buy ==0:
-							
-						prc= bid_prc   
-
-						if deri_test == 1 :
-
-							client_trading.private_buy_get(
-							instrument_name=fut,
-							amount=QTY,
-							price=prc,
-							type=limit,
-							reduce_only='false',
-							post_only='true'
-							)		
-
-						if deri_test == 0  :
-							print(GREEN + str((fut,cfPrivate.send_order_1(dict(default_order_limit,**{"size": QTY,"limitPrice":prc}))
-						)),ENDC)
-
-						else:
-    
-							pass
-
-#TODO:'place_asks'
-
-			# OFFERS
-
-			if place_asks:
-
-				default_order_limit= (dict(default_order_limit,**{"side": "sell"}))
-
-				if   fut_test==1 : 
-
-					test_time		= 	(filledOrders_buy_lastTime_conv < openOrders_time_sell_conv or openOrders_time_sell_conv ==0) and (
-						filledOrders_buy_lastTime_conv <  IDLE_TIME *5
-					)
-
-					xrp_prc=float(self.truncate(hold_avgPrc_buy,8))
-					xrp_margin= int((hold_avgPrc_buy * (one_pct  ))/TICK) * TICK											
-					xrp_prc=  float(self.truncate((xrp_prc + xrp_margin ),8)) 
-					xbt_prc=  int(hold_avgPrc_buy+(hold_avgPrc_buy*one_pct ))
-
-					prc_imbal 	=	 max(ask_prc, (xbt_prc if curr=='xbt' else xrp_prc) )
-					test_qty_sum_fut 	= 	hold_qty_buy > abs(openOrders_qty_sell_limit_sum)   and abs(
-						abs(hold_qty_buy) ) > 0  and filledOrders_qty_buy <= QTY 
-
-					test_qty_freq 	=  abs(openOrders_qty_sell_limitLen ) < FREQ										
-
-					prc_limit		=	ask_prc if filledOrders_prc_buy ==0 else max(ask_prc ,int(filledOrders_prc_buy+(TICK*2)) if curr== 'xbt' else float( (round(
-									filledOrders_prc_buy+(TICK),8)))) + TICK
-
-#NORMAL,  limit seketika setelah eksekusi order
-
-					if (test_time == True and test_qty_sum_fut == True ):													
-						
-
-						print(RED + str((fut,'#NORMAL, bila limit diekseskusi','test_time',test_time,
-						'filledOrders_buy_lastTime_conv', filledOrders_buy_lastTime_conv,'openOrders_time_sell_conv',  openOrders_time_sell_conv,
-						'test_qty_sum',test_qty_sum_fut,'prc_limit',prc_limit,'filledOrders_qty_buy',filledOrders_qty_buy
-						)),ENDC)	
-													
-						if deri_test == 1 and qty_imbal_fut !=0:
-
-							client_trading.private_sell_get(
-							instrument_name=fut,
-							reduce_only='false',
-							type=limit,
-							price=prc_limit,
-							post_only='true',
-							amount=filledOrders_qty_buy)	
-
-						if deri_test == 0 and qty_imbal_fut !=0:
-
-							print(RED + str((fut,cfPrivate.send_order_1(dict(default_order_limit,**{"size": filledOrders_qty_buy,"limitPrice":prc_limit}))
-						)),ENDC)
-
-#pengimbang saldo sell, sisa apa pun, dimasukkan ke average 						
-					if   test_qty_sum_fut  == True :
+			if (test_time_buy_filled and test_time_sell_open) :					
+				prc=		prc + max(ask_prc,(filledOrders_prc_buy + TICK))
 				
-						if deri_test == 1 :																		
-							client_trading.private_sell_get(
-							instrument_name=fut,
-							reduce_only='false',
-							type=limit,
-							price=prc_imbal,
-							post_only='true',
-							amount=qty_imbal_fut
-							)	
+#? menentukan qty
+			qty= QTY * 2
 
-						if deri_test == 0 :
+#? menentukan side
 
-							print(RED + str((fut,cfPrivate.send_order_1(dict(default_order_limit,**{"size": qty_imbal_fut,"limitPrice":prc_imbal}))
-						)),ENDC)
+			default_order = {
+						"orderType": "post",
+						"symbol": fut.upper(),
+						"reduceOnly": "false"
+						}						
 
-#NORMAL,, pasang posisi beli pada QTY =0/avg up  					                                                    							
-				elif   perp_test==1 and (openOrders_qty_sell == 0 or  openOrders_qty_sell_filled !=0 ) :
+			print(fut,'openOrders_qty_buyQTY',openOrders_qty_buyQTY,'openOrders_qty_sellQTY',openOrders_qty_sellQTY )
 
-					test_qty_zero_perp =  hold_qty_sell ==0 and abs(openOrders_qty_sell_limit) ==0
-#					test_time = delta_time_sell > IDLE_TIME	
-									
-					if  ( test_time_perp == True )  or (test_qty_zero_perp ==True) or delta_time_sell==0:
+			if test_buy_fut :													
+				print (GREEN + str((fut,'fut_test 2',test_time_sell_filled,test_time_buy_open)),ENDC)
+				default_order= (dict(default_order,**{"side": "buy"}))
 
-						prc= ask_prc 
-						
-						if deri_test == 1 :
-							client_trading.private_sell_get(
-							instrument_name=fut,
-							reduce_only='false',
-							type=limit,
-							price=max(prc,ask_prc) ,
-							post_only='true',
-							amount=QTY
-							)	
+			elif (openOrders_qty_buyQTY < QTY and fut_test==1 and test_time_buy_beg ) :													
+				print (GREEN + str((fut,'fut_test 1',fut_test,'openOrders_qty_buyQTY',openOrders_qty_buyQTY,
+				'test_time_buy_beg',test_time_buy_beg)),ENDC)
+				default_order= (dict(default_order,**{"side": "buy"}))
 
-						if deri_test == 0:
+			if test_sell_perp :													
+				print (RED + str((fut,'fut_test 4',test_time_buy_filled,test_time_sell_open)),ENDC)
+				default_order= (dict(default_order,**{"side": "sell"}))
 
-							print(fut,QTY,prc)
-							print(RED + str((fut,cfPrivate.send_order_1(dict(default_order_limit,**{"size": QTY,"limitPrice":prc}))
-						)),ENDC)
-						else:
-    
-							pass
+			elif (openOrders_qty_sellQTY < QTY and perp_test==1 and test_time_sell_beg ) :													
+				print (RED + str((fut,'fut_test 3',fut_test,'openOrders_time_sell_conv',openOrders_time_sell_conv,
+				'test_time_sell_beg',test_time_sell_beg)),ENDC)
+				default_order= (dict(default_order,**{"side": "sell"}))
 
+			if (fut_test==1 and test_time_buy_beg )  :													
+				xrp_prc=float(self.truncate(bid_prc,8))
+
+				prc		=		bid_prc if curr== 'xbt' else xrp_prc
+				qty		=		QTY
+
+			if (perp_test==1 and test_time_sell_beg ) :													
+				xrp_prc=float(self.truncate(ask_prc,8))
+				prc		=		ask_prc  if curr== 'xbt' else xrp_prc
+				qty		=		QTY
+
+			print(GREEN + str((fut,'prc',prc,'qty',qty,'default_order',default_order)),ENDC)
+			print(GREEN + str((fut,'default_order len',len(default_order))),ENDC)
 
 			print('\n')
 
-			qty_pos=(([o['size'] for o in [o for o in position_CF  ]]))
+			if  deri_test == 1 and prc !=0 :
 
-			side_pos=(([o['side'] for o in [o for o in position_CF  ]])) 
-			prc_pos=(([int(o['price']) for o in [o for o in position_CF  ]])) 
-			liq=account_CF['triggerEstimates']['lt']
-			bal=account_CF['balances']['xbt']
-			
-			self.summary_account(instruments_list_ori,side_pos,prc_pos,tickers_instrument,qty_pos,open_instrument,open_instrument_len)
-			qty_imbalance_sell 		=	abs(hold_qty_sell_all) -  openOrders_qty_buy_all  #4 menjamin order sell maks = order buy
-			qty_imbalance_buy 	=	abs(hold_qty_buy_all) -  openOrders_qty_sell_all  #4 menjamin order sell maks = order buy
-			
-			print('\n')
-			print(BOLD + str((fut)),ENDC)
-			
-			print('\n')
-			print(BOLD + str(('counter',counter)),ENDC)
-			print('\n')
+				client_trading.private_buy_get(
+											instrument_name = fut,
+												reduce_only	= 'false',
+												type		= limit,
+												price		= prc,
+												post_only	='true',
+												amount		= qty
+											)	
 
-		#	print('bal=',bal,bal*tickers_xbt_fut[0])
-  
-    #https://stackoverflow.com/questions/39032720/formatting-lists-into-columns-of-a-table-output-python-3
+			if  deri_test == 0 and (abs(prc) > 5 if curr== 'xbt' else (abs(prc) > 0) )and len(default_order) > 3:
 
-			qty= max (hold_qty_buy,abs(hold_qty_sell))
-#			my_message= (f" {datetime.now()}  {fut}  {counter}")
+				print(REVERSE + str((fut,
+									cfPrivate.send_order_1(dict(default_order,
+									**{"size": qty,
+									"limitPrice":prc}))
+						)),ENDC) 
 
-#			if counter >10:
-#				telegram_bot_sendtext(my_message)
-			print((f" 14 {TEST}{datetime.now()} "))
-
-			if counter > (COUNTER if equity !=0 else 0):
+			if counter > (COUNTER ):
 				while True:
-					sys.exit()
+					sleep (10)
+					self.restart_program()
 				break
 								
 			print(BOLD + str((fut,'counter',counter)),ENDC)
-#			if counter > (COUNTER-4 if equity !=0 else 0) and (
-#				(bid_oke==False and fut_test==1) or (ask_oke==False and perp_test==1)):
 
-#				print(BOLD + str((fut,'counter A',counter,'hma',hma_net)),ENDC)
-#				while True:
-#					print(BOLD + str((fut,'counter',counter,'bid_oke==False and fut_test==1 A',bid_oke==False and 
-#			fut_test==1,'ask_oke==False and perp_test==1',ask_oke==False and perp_test==1)),ENDC)
-#					sys.exit()
-#				break
 	def restart_program(self):
 
 		python = sys.executable
@@ -1555,7 +1005,7 @@ class MarketMaker(object):
 if __name__ == '__main__':
 
 	try:
-		mmbot = MarketMaker(monitor=args.monitor, output=args.output)
+		mmbot = MarketMaker( )
 		mmbot.run()
 	except(KeyboardInterrupt, SystemExit):
 		print(traceback.format_exc())
@@ -1569,6 +1019,4 @@ if __name__ == '__main__':
 #TODO:
 
 
-#optimal TF
-#penempatan ob df
 #FIXME:
