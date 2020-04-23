@@ -106,7 +106,7 @@ DELTA_PRC	=  one_pct /20
 IDLE_TIME   = 600 #nggak jalan?
 LOG_LEVEL   = logging.INFO
 XRP_ROUND	=100000000
-COUNTER		=2
+COUNTER		=5
 FREQ		= 8
 RED   		= '\033[1;31m'#Sell
 BLUE  		= '\033[1;34m'#information
@@ -298,7 +298,6 @@ class MarketMaker(object):
 
 		return filter
 
-
 	def filter_no_var(self,data,result ):
     
 		try:
@@ -308,13 +307,19 @@ class MarketMaker(object):
 
 		return filter
 
-
-
 	def truncate(self,f, n):
 		'''Truncates/pads a float f to n decimal places without rounding'''
 		s = '%.12f' % f
 		i, p, d = s.partition('.')
 		return '.'.join([i, (d+'0'*n)[:n]])
+
+	def get_non_perpetual (self,get_instruments_CF,currency):
+		'''get non-perpetual instruments'''
+		fut = [( [ o['symbol'] for o in[
+				o for o in get_instruments_CF if o[
+				'symbol'][3:][:3]== currency and len(o[
+					'symbol'])<=16 and o['symbol'][:1] == 'f'  ]])]
+		return fut
 
 	def place_orders(self):					
 	
@@ -328,29 +333,29 @@ class MarketMaker(object):
      #                                               ]]
 	#	stamp_new		=  (  min( (stamp)[0],(stamp)[1]))
 
-		get_instruments_CF           = self. get_instruments_CF()
+		get_instruments_CF	= self. get_instruments_CF()
+		xbt_non_perp 		= self.get_non_perpetual (get_instruments_CF,'xbt')[0]
+		xrp_non_perp 		= self.get_non_perpetual (get_instruments_CF,'xrp') [0]
+		eth_non_perp		= self.get_non_perpetual (get_instruments_CF,'eth') [0]
 
-		xbt_perp		= ['pi_xbtusd']
+		xbt_perp			= ['pi_xbtusd']
+		eth_perp			= ['pi_ethusd']
+		xrp_perp			= ['pv_xrpxbt']
 
-		xbt_fut			=[max( [ o['symbol'] for o in[
-							o for o in get_instruments_CF if o[
-								'symbol'][3:][:3]=='xbt' and len(o[
-									'symbol'])<=16 and o['symbol'][:1] == 'f'  ]])]
+		xbt_fut				= max(sorted (xbt_non_perp))
 
-		xbt_fut_min			=[min( [ o['symbol'] for o in[
-							o for o in get_instruments_CF if o[
-								'symbol'][3:][:3]=='xbt' and len(o[
-									'symbol'])<=16 and o['symbol'][:1] == 'f'  ]])]
-		
-		xrp_perp		= ['pv_xrpxbt']
+		xbt_fut_min			= min(sorted(xbt_non_perp))
 
-		xrp_fut			= [ o['symbol'] for o in[o for o in get_instruments_CF if (
-							o['symbol'][3:][:3]=='xrp' and o['symbol'][3:][3:][
-								:3] !='usd'and  (o['symbol'][:1] == 'f' ))  ]]
+		eth_fut				= max(sorted (eth_non_perp) )
 
-		instruments_list_ori= list( xbt_perp + xbt_fut+ xbt_fut_min+xrp_perp + xrp_fut  )
-		instruments_list_xbt= list( xbt_perp + xbt_fut)
-		instruments_list_alts= list( xrp_perp + xrp_fut  )
+		eth_fut_min 		= min(sorted (eth_non_perp) )
+
+		xrp_fut				= max (sorted (xrp_non_perp) )
+
+		instruments_list_xbt= list( xbt_perp + [xbt_fut])
+		instruments_list_eth= list( eth_perp + [eth_fut])
+		instruments_list_xrp= list( xrp_perp + [xrp_fut])
+		instruments_list_alts= list( instruments_list_eth + instruments_list_xrp  )
 
 		tickers=self.get_tickers_CF()
 
@@ -366,19 +371,11 @@ class MarketMaker(object):
 		openOrders_CF				=	 self.openOrders_CF()
         
 		openOrders_CF           = [] if openOrders_CF ==[] else openOrders_CF
-
-		try:
-			position_CF= self.position_CF()
-
-		except:
-			position_CF=0
-
 		 		
 		for fut in instruments_list:
 			#membagi deribit vs crypto facilities			
 			deri_test	= 0 if (fut[:1] == 'p' or fut[:1]=='f') else 1
 			account         = account_CF #if deri_test == 0 else self.account_drbt(fut)
-
 			#mendapatkan nama akun deribit vs crypto facilities
 			sub_name        = 'CF' if deri_test == 0 else account ['username']#deri + xbt_CF + y) ))
 			nbids		=	1
@@ -415,20 +412,10 @@ class MarketMaker(object):
 			TICK			= ([o['tickSize']  for o in [o for o in get_instruments_CF if  
 								o['symbol']==fut]] [0]) if deri_test == 0 else (1/2)
 
-			QTY         = QTY if curr== 'xbt' else QTY * 3
+			QTY         = QTY if curr== 'xbt' else ( int(QTY/3) if curr== 'eth' else QTY *3 )#* 3
 
 			filledOrder		=  [ o for o in [o for o in json.loads(cfPrivate.get_fills())[
 				'fills'] if o[instrument]==fut   ]]  #if deri_test == 0 else  self.filledOrder_drbt( fut ) 
-
-			position_CF_fut       = 0 if position_CF == 0 else [ o for o in[o for o in position_CF if o[
-                    'symbol'][3:][:3]==fut [3:][:3]  ]]
-
-			positions       = position_CF_fut if deri_test == 0 else  (
-				client_account.private_get_positions_get(currency=(fut[:3]
-				), kind='future')['result'])
-			
-			position        = position_CF_fut if deri_test == 0 else (
-				client_account.private_get_position_get(fut)['result'])
 
 			openOrders_CF_fut           =[] if openOrders_CF ==[] else  (
 				 [ o for o in [o for o in openOrders_CF if o[
@@ -442,16 +429,21 @@ class MarketMaker(object):
 				1 if fut [-10:] == '-PERPETUAL' else 0)
 			perp_test_xrp   =(1 if xrp_perp[0]==fut else 0) if deri_test ==0 else (
 				1 if fut [-10:] == '-PERPETUAL' else 0)
-			
-			perp_test_CF    =perp_test_xbt if curr== 'xbt' else perp_test_xrp
+
+			perp_test_eth   =(1 if eth_perp[0]==fut else 0) if deri_test ==0 else (
+				1 if fut [-10:] == '-PERPETUAL' else 0)
+
+
+			perp_test_CF    = perp_test_xbt if curr== 'xbt' else ( perp_test_xrp if curr== 'xrp' else perp_test_eth)
 			
 			perp_test   =perp_test_CF if deri_test ==0 else (1 if fut [-10:] == '-PERPETUAL' else 0)
 
 			fut_test_xbt =( 1 if ( xbt_fut[0] == fut   ) else 0 )
 
 			fut_test_xrp =  0 if TRAINING==True else ( 1 if ( xrp_fut[0] ==fut  ) else 0 ) 
+			fut_test_eth =  0 if TRAINING==True else ( 1 if ( eth_fut[0] ==fut  ) else 0 ) 
 
-			fut_test_CF    =fut_test_xbt if curr== 'xbt' else fut_test_xrp
+			fut_test_CF    =fut_test_xbt if curr== 'xbt' else ( fut_test_xrp if curr== 'xrp' else fut_test_eth) 
 
 			fut_test    =fut_test_CF# if deri_test==0 else (1 if stamp_new == fut  else 0)
 
@@ -641,9 +633,12 @@ class MarketMaker(object):
 			openOrders_oid_buy_max1=0
 			
 			openOrders_oid_buy_max2=0
+			print(fut, 'openOrders_time_buy',openOrders_time_buy)
+			print(fut, 'openOrders_qty_buy_limitLen',openOrders_qty_buy_limitLen)
+			print(fut, 'openOrders_qty_buy_limitLen > (QTY - nbids)',openOrders_qty_buy_limitLen > (QTY - nbids))
 			
 #!#####    			
-			if openOrders_qty_buy_limitLen > (QTY - nbids):
+			if openOrders_qty_buy_limitLen > (FREQ - nbids):
     				
 				openOrders_buy_minmax= 0 if openOrders_time_buy== 0 else sorted ([ o['receivedTime'] for o in [
 						o for o in open_buy  ]])
@@ -664,7 +659,7 @@ class MarketMaker(object):
 				openOrders_qty_buy_max1= 0 if openOrders_buy_minmax == 0 else ([ o[unfilledSize] for o in [
 						o for o in open_buy  if o['receivedTime']== openOrders_time_buy_max1 ]])[0]
 
-			if openOrders_qty_sell_limitLen > (QTY - nbids):
+			if openOrders_qty_sell_limitLen > (FREQ - nbids):
 
 				openOrders_sell_minmax= 0 if openOrders_time_sell== [] else sorted ([ o['receivedTime'] for o in [
 						o for o in open_sell  ]])
@@ -936,13 +931,15 @@ class MarketMaker(object):
 
 			if (fut_test==1 and test_time_buy_beg )  :													
 				xrp_prc=float(self.truncate(bid_prc,8))
+				eth_prc=float(self.truncate(bid_prc,8))
 
-				prc		=		bid_prc if curr== 'xbt' else xrp_prc
+				prc		=		xrp_prc if curr== 'xrp' else  (eth_prc if curr== 'eth' else bid_prc ) 
 				qty		=		QTY
 
 			if (perp_test==1 and test_time_sell_beg ) :													
 				xrp_prc=float(self.truncate(ask_prc,8))
-				prc		=		ask_prc  if curr== 'xbt' else xrp_prc
+				eth_prc=float(self.truncate(ask_prc,8))
+				prc		=		xrp_prc if curr== 'xrp' else  (eth_prc if curr== 'eth' else ask_prc )  
 				qty		=		QTY
 
 			print(GREEN + str((fut,'prc',prc,'qty',qty,'default_order',default_order)),ENDC)
