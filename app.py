@@ -43,7 +43,7 @@ print('accountCF',chck_key,accountCF)
 
 
 #FIXME:
-TRAINING                    =  True# False#
+TRAINING                    =   False#True#
 endpoint_training           =   "https://conformance.cryptofacilities.com/derivatives"
 endpoint_production         =   "https://www.cryptofacilities.com/derivatives"
 apiPublicKey_training       =   "PlRnNMw9jpQw1Cnxel99eVqjAp00fCypDdc4zC4godZJa91Y4UXfMHMz"
@@ -170,11 +170,7 @@ def time_conversion ( waktu ):
 def time_conversion_net  ( waktu ):
 	'''Mengurangi waktu  UTC dengan waktu saat ini'''
 
-
 	konversi 		=  0 if waktu == 0 else	(time_now) - time_conversion(waktu) 
-	print('time_now',time_now,len(str(time_now)))
-	print('time_conversion(waktu)',time_conversion(waktu),len(str((time_conversion(waktu)))))
-	print('konversi',konversi,len(str(konversi)))
 
 	return konversi
 
@@ -254,28 +250,12 @@ class MarketMaker(object):
 		return  filledOrder
 
 
-
 	@lru_cache(maxsize=None)
-	def get_position(self ):
-    						
-		try:
-			get_position = json.loads(cfPrivate.get_openpositions(
-							        ))['openPositions']
-		
-		except:
-			get_position 	= 0
+	def get_positions(self,contract ):
 
-		get_position = 0 if get_position == 0 else [ o for o in[o for o in get_position  ]]
-		
-
-		return  get_position
-
-
-	@lru_cache(maxsize=None)
-	def get_position_CF(self,contract ):
+		'''get position for each instuments as well as their attributes'''
 
 		exchange 	=	get_exchange(contract)
-    						
 		try:
 			get_position_CF = json.loads(cfPrivate.get_openpositions(
 							        ))['openPositions']
@@ -290,13 +270,91 @@ class MarketMaker(object):
 		except:
 			get_position_drbt 	= 0
 
-
 		get_position_CF = 0 if get_position_CF == 0 else [ o for o in[o for o in get_position_CF if o[
                     'symbol'][3:][:3]==contract [3:][:3]  ]]
-		
-		get_position_CF 	=	get_position_drbt if exchange == 'deribit' else get_position_CF
+	
+		get_position 	=	get_position_drbt if exchange == 'deribit' else get_position_CF
 
-		return  get_position_CF
+		return get_position
+
+
+	@lru_cache(maxsize=None)
+	def hold_instruments(self,contract ):
+
+		'''get position for each instuments as well as their attributes'''
+		get_position 	=	self.get_positions(contract)
+		get_perpetual= self.get_perpetual (contract)
+		print(contract,get_perpetual)
+
+		exchange 	=	get_exchange(contract)
+		[avgPrc]		= ['price'] if exchange == 'krakenfut' else ['avgPrc'] 
+		[side]			= ['side']  if exchange == 'krakenfut' else ['direction'] 
+		longs         	=	('long' if exchange == 'krakenfut' else 'buy')
+		[instrument]	= ['symbol'] if exchange == 'krakenfut' else ['instrument_name'] 
+		short         	=	('short'  if exchange == 'krakenfut' else 'sell')
+		[size]			=  ['size']  if exchange == 'krakenfut' else ['size']     						
+		try:
+			hold_avgPrc_buy		=	self.filter_two_var (get_position,
+															avgPrc,
+															side,
+															longs,
+															instrument,
+															contract ) [0]
+		except:
+			hold_avgPrc_buy 	= 0
+
+		try:
+			hold_avgPrc_sell    =  	self.filter_two_var (get_position,
+														avgPrc,
+														side,
+														short,
+														instrument,
+														contract ) [0]
+
+		except:
+			hold_avgPrc_sell 	= 0
+
+
+# berdasarkan qty
+
+
+		try:
+			hold_qty_buy    =  	self.filter_two_var (get_position,
+														size,
+														side,longs,
+														instrument,contract) [0]
+
+		except:
+			hold_qty_buy 	= 0
+
+		try:
+			hold_qty_sell    =  	self.filter_two_var (get_position,
+														size,
+														side,
+														short,
+														instrument,
+														contract) [0]
+
+		except:
+			hold_qty_sell 	= 0
+
+
+		try:
+			hold_qty_perp    =  	self.filter_two_var (get_position,
+														size,
+														side,
+														short,
+														instrument,
+														get_perpetual[0]) [0]
+			
+		except:
+			hold_qty_perp 	= 0
+
+		return { 'hold_avgPrc_buy': hold_avgPrc_buy, 
+				'hold_avgPrc_sell': hold_avgPrc_sell,
+				'hold_qty_buy': hold_qty_buy, 
+				'hold_qty_sell': hold_qty_sell, 
+				'hold_qty_perp': hold_qty_perp}
 
 	@lru_cache(maxsize=None)
 	def openOrders_CF(self ):
@@ -605,6 +663,29 @@ class MarketMaker(object):
 				'non_perp_max': non_perp_max}
 
 
+	def get_perpetual (self,contract):
+		'''get perpetual instruments for kraken futures'''
+		tickers 	=	self.get_tickers_CF()
+
+		exchange 	=	get_exchange(contract)
+		currency_kf =contract [3:][:3]
+		currency_drbt =contract[:3] 		
+
+		if currency_kf == 'xbt':
+			perpetual	=   ['pi_xbtusd']
+   
+		if currency_kf == 'eth':
+			perpetual	=   ['pi_ethusd']
+   
+		if currency_drbt == 'BTC':
+			perpetual	=  ['BTC-PERPETUAL']
+   
+		if currency_drbt == 'ETH':
+			perpetual	=  ['ETH-PERPETUAL']
+
+		return perpetual
+
+
 	@lru_cache(maxsize=None)
 	def account_CF(self ):
 
@@ -617,15 +698,60 @@ class MarketMaker(object):
     						
 		return  (client_account.private_get_account_summary_get(
                                         currency=(contract[:3]), extended='true')['result'])
+
+	@lru_cache(maxsize=None)
+	def mark_prc (self,contract ):
+		exchange 	=	get_exchange(contract)
+		currency_kf =contract [3:][:3]
+		currency_drbt =contract[:3] 		
+ 
+		if currency_kf == 'xbt':
+			contract	=  'pi_xbtusd'
+   
+		if currency_kf == 'eth':
+			contract	=  'pi_ethusd'
+   
+		if currency_drbt == 'BTC':
+			contract	=  'BTC-PERPETUAL'
+   
+		if currency_drbt == 'ETH':
+			contract	=  'ETH-PERPETUAL'
+
+
+		try:
+			book_summ_btc  	=	self.book_summary_drbt(currency_drbt)
+		
+		except:
+			book_summ_btc 	= 0
+		
+
+		tickers = self.get_tickers_CF ()
+
+		try:
+			mark_prc_kf = [ o['markPrice'] for o in[o for o in tickers  if o['symbol']==contract]] [0]
+		
+		except:
+			mark_prc_kf 	= 0
+
+
+		try:
+			mark_prc_drbt= [ o['mark_price'] for o in[o for o in book_summ_btc  if o['instrument_name']==contract ]] [0]
+		
+		except:
+			mark_prc_drbt 	= 0
+		
+		mark_prc 	=	mark_prc_drbt if exchange == 'deribit' else mark_prc_kf
+
+		return  mark_prc
+
+
 	def usd_value_kf(self,contract ):
     
 		account_CF 	=	self.account_CF( )
-		tickers = self.get_tickers_CF ()
+		mark_prc			= 	self.mark_prc(contract)
 
 		account_CF_xbt=account_CF['fi_xbtusd']  ['balances']   ['xbt']
 		account_CF_eth=account_CF ['fi_ethusd']  ['balances'] ['eth']
-
-		mark_prc =[ o['markPrice'] for o in[o for o in tickers  if o['symbol']==contract]] [0]
 
 		balances_xbt=account_CF_xbt *mark_prc
 		balances_eth=account_CF_eth *mark_prc
@@ -637,8 +763,8 @@ class MarketMaker(object):
 	def usd_value_drbt(self,contract ):
         
 		account_drbt 	=	self.account_drbt(contract )
-		book_summ_btc  	=	self.book_summary_drbt('BTC')
-		mark_prc=book_summ_btc ['mark_price'] 
+		
+		mark_prc			= 	self.mark_prc(contract)
 
 		account_drbt=[ o['equity'] for o in[o for o in account_drbt  if o['currency']==contract[:3]]] [0]
 
@@ -666,19 +792,16 @@ class MarketMaker(object):
 		return		usd_value 	
 
 
-
 	def rounding(self,variable,TICK ):
-        
+
+		return		(round(variable / TICK)) * TICK 	
+
+
+	def normal(self,variable,TICK ):
     
-		rounding			= round(variable / TICK)
-		rounding			= round((variable * TICK)-TICK,2)
-
-		return		rounding 	
-
-
+		return		(round(variable / TICK)) * TICK 	
 
 	def place_orders(self):			
-
 
 		get_non_perpetual_drbt = self.get_non_perpetual_drbt('BTC')
 		get_non_perpetual_kf_xbt = self.get_non_perpetual_kf('xbt')
@@ -701,15 +824,11 @@ class MarketMaker(object):
 		instrmt_sell_kf_eth	= (eth_perp_kf )
 		instrmt_buy_kf_eth		= (get_non_perpetual_kf_eth['non_perp_max'] +  get_non_perpetual_kf_eth['non_perp_min'] )
 		instrmt_kf_eth	= (instrmt_sell_kf_eth+ instrmt_buy_kf_eth)
-		print('instrmt_kf_eth',instrmt_kf_eth)
 
 		instrmt_buy	= (instrmt_buy_drbt_xbt + instrmt_buy_kf_xbt + instrmt_buy_kf_eth)
 		instrmt_sell	= (instrmt_sell_drbt_xbt + instrmt_sell_kf_xbt + instrmt_sell_kf_eth)
-
-
 	
-		instruments_list_xbt= list( instrmt_drbt_xbt+ instrmt_kf_xbt)
-		print('instruments_list_xbt',instruments_list_xbt)
+		instruments_list_xbt= list(instrmt_kf_xbt)#( instrmt_drbt_xbt+ instrmt_kf_xbt) #(instrmt_kf_xbt)#
 
 		instruments_list_eth= list(instrmt_kf_eth)
 		instruments_list_xrp= 0# list( xrp_perp + [xrp_fut])
@@ -734,11 +853,14 @@ class MarketMaker(object):
 			exchange 	=	get_exchange(fut) 
 
 
-			ord_book		= self.get_bbo(fut)		
+			ord_book		= self.get_bbo(fut)	
+			book_summ_btc  	=	self.book_summary_drbt('BTC')
+
 
 			nbids		=	1
 			nasks		=	1
-			FREQ 		= 	2 if TRAINING  ==   True  else 10
+			FREQ 		= 	20 if exchange  ==   'deribit'  else 10
+			FREQ 		= 	2 if TRAINING  ==   True  else FREQ
 			FREQ		=	FREQ -	max(nasks,nbids)				
 			n			=	10		
 			IDLE_TIME 	= 120 if TRAINING  ==   True  else 90
@@ -755,6 +877,7 @@ class MarketMaker(object):
 			[stopPrice]		= ['stopPrice'] if exchange == 'krakenfut' else ['stop_price'] 		
 			[avgPrc]		= ['price'] if exchange == 'krakenfut' else ['avgPrc'] 
 			[fillTime]		=  ['fillTime'] if exchange == 'krakenfut' else ['creation_timestamp'] 
+			[receivedTime]		=  ['receivedTime'] if exchange == 'krakenfut' else ['creation_timestamp'] 
 			[last_update_timestamp]=  ['lastUpdateTime']  if exchange == 'krakenfut' else ['last_update_timestamp'] 	
 			[orderType]		=  ['orderType'] if exchange == 'krakenfut' else ['order_type']
 			[order_id]		=  ['order_id'] if exchange == 'krakenfut' else ['order_id'] 
@@ -762,64 +885,45 @@ class MarketMaker(object):
 			buy         	=	('buy' or 'buy')
 			sell        	=	('sell' or 'sell') 
 			longs         	=	('long' if exchange == 'krakenfut' else 'buy')
+			short         	=	('short'  if exchange == 'krakenfut' else 'sell')
+
 			limit    		=('lmt'  if exchange == 'krakenfut' else 'limit' )
 			stop    		=('stop' if exchange == 'krakenfut' else 'stop') 	
-			short         	=	('short'  if exchange == 'krakenfut' else 'sell')
 			curr    		= 	fut [3:][:3] #'xbt'/'xrp')
 			TICK			= 	self.get_tick_CF(fut)
+			
 			QTY         	= 	10 if accountCF == 'gmail' else 2
 			QTY         	=	QTY if curr== 'xbt' else  max(1, int(QTY*1/3))
-			usd_value = self.usd_value(fut)
-			QTY = max(1,int(usd_value *1/3))
+			usd_value		= self.usd_value(fut)
+			QTY				= max(1,int(usd_value *1/3))
 			
-			sellable_test   	=	1 if fut in instrmt_sell  else  0 
-			buyable_test    	=	1 if fut in instrmt_buy  else  0
-			print('fut',fut)
-			print('sellable',sellable_test)
-			print('buyable',buyable_test)
+			sellable_test   =	1 if fut in instrmt_sell  else  0 
+			buyable_test    =	1 if fut in instrmt_buy  else  0
 
+			mark_prc			= 	self.mark_prc(fut)
+			get_perpetual= self.get_perpetual (fut)
+			
 #! mendapatkan kontrak outstanding --> 
 
-			positions       = self.get_position_CF(fut) 
+			positions       = self.hold_instruments(fut) 
 
-	# berdasarkan harga
+			hold_avgPrc_buy		=	 positions ['hold_avgPrc_buy']
 
-			hold_avgPrc_buy		=	self.filter_two_var (positions,
-															avgPrc,
-															side,
-															longs,
-															instrument,
-															fut )
+			hold_avgPrc_sell    =  	positions ['hold_avgPrc_sell']
 
-			hold_avgPrc_buy		= 	0 if  hold_avgPrc_buy == []   else hold_avgPrc_buy[0]
+			hold_qty_buy		= 	positions ['hold_qty_buy']
+			
+			hold_qty_sell		= 	positions ['hold_qty_sell']
 
-			hold_avgPrc_sell    =  	self.filter_two_var (positions,
-															avgPrc,
-															side,
-															short,
-															instrument,
-															fut )	
+			hold_qty_perp		= 	positions ['hold_qty_perp']
 
-			hold_avgPrc_sell	= 	0 if  hold_avgPrc_sell == [] else hold_avgPrc_sell[0]
+			get_position = self.get_positions(fut)
 
-	# berdasarkan qty
+			actual_hedging		=  hold_qty_perp
+			min_hedging		= usd_value
 
-			hold_qty_buy		= 	self.filter_two_var (positions,
-															size,
-															side,longs,
-															instrument,fut ) 
-
-			hold_qty_buy		= 	0 if  hold_qty_buy == [] else hold_qty_buy[0]
-
-			hold_qty_sell		= 	self.filter_two_var (positions,
-															size,
-															side,
-															short,
-															instrument,
-															fut ) 
-
-			hold_qty_sell		= 	0 if  hold_qty_sell == [] else hold_qty_sell[0]
-
+			print(fut, 'actual_hedging',actual_hedging)
+			print(fut, 'min_hedging',min_hedging)
 
 			hold_qty_buy_all		=  []#	([o[size] for o in [o for o in positions if o[side]== longs if o[
 #												instrument] != xbt_fut_min and o[
@@ -839,8 +943,6 @@ class MarketMaker(object):
 
 #! mendapatkan atribut RIWAYAT transaksi deribit vs crypto facilities-->FILLED 								
 			filledOrder 		=	self.filledOrder(fut)  
-			print('filledOrderc',filledOrder)
-
 		# cek waktu transaksi terbaru--> fillTime
 			filledOrders_sell_lastTime	=   (self.filter_one_var (filledOrder,
 																fillTime,
@@ -928,9 +1030,9 @@ class MarketMaker(object):
 			openOrders_qty_sell_Len_lmt= self.filter_no_var (open_sell_lmt,unfilledSize,len)
 
 		# cek waktu order beli disubmit--> last_update_timestamp										 
-			openOrders_time_buy	    =	sorted ([ o['receivedTime'] for o in [o for o in open_buy]])
-			openOrders_time_buy_lmt	    =	sorted ([ o['receivedTime'] for o in [o for o in open_buy_lmt]])
-			openOrders_time_buy_stp	    =	sorted ([ o['receivedTime'] for o in [o for o in open_buy_stp]])
+			openOrders_time_buy	    =	sorted ([ o[receivedTime] for o in [o for o in open_buy]])
+			openOrders_time_buy_lmt	    =	sorted ([ o[receivedTime] for o in [o for o in open_buy_lmt]])
+			openOrders_time_buy_stp	    =	sorted ([ o[receivedTime] for o in [o for o in open_buy_stp]])
 
 		# cek waktu order beli TERLAMA disubmit--> last_update_timestamp	min									 
 			openOrders_time_buy_min = 0 if openOrders_time_buy == [] else min (openOrders_time_buy)
@@ -952,22 +1054,16 @@ class MarketMaker(object):
 
 			openOrders_time_buy_lmt_max2_conv 	=( time_conversion  ( openOrders_time_buy_max2) )
 
-
-
-
 		# waktu transaksi UTC di-net dg waktu saat ini--> time_conversion_net: now
 			openOrders_time_buy_lmt_max_conv_net 	=  ( time_conversion_net  ( openOrders_time_buy_lmt_max) )
 
 			openOrders_time_buy_stp_max_conv_net 	= ( time_conversion_net  ( openOrders_time_buy_stp_max) )
 
-
-
-
 		# cek waktu order jual disubmit--> last_update_timestamp	
 
-			openOrders_time_sell	= sorted ([ o['receivedTime'] for o in [o for o in open_sell]])
-			openOrders_time_sell_lmt	= sorted ([ o['receivedTime'] for o in [o for o in open_sell_lmt]])
-			openOrders_time_sell_stp	= sorted ([ o['receivedTime'] for o in [o for o in open_sell_stp]])
+			openOrders_time_sell	= sorted ([ o[receivedTime] for o in [o for o in open_sell]])
+			openOrders_time_sell_lmt	= sorted ([ o[receivedTime] for o in [o for o in open_sell_lmt]])
+			openOrders_time_sell_stp	= sorted ([ o[receivedTime] for o in [o for o in open_sell_stp]])
 
 		# cek waktu order jual TERLAMA disubmit--> last_update_timestamp	min									 
 			openOrders_time_sell_min 	= 0 if openOrders_time_sell == [] else min (openOrders_time_sell)
@@ -998,7 +1094,7 @@ class MarketMaker(object):
 		# cek harga order beli TERLAMA disubmit--> last_update_timestamp	min									 
 			openOrders_prc_buy_min			= self.filter_one_var (open_buy,
 															[limitPrice],
-															['receivedTime'],
+															[receivedTime],
 															openOrders_time_buy_min,min
 															)
 
@@ -1060,7 +1156,7 @@ class MarketMaker(object):
 															)
     
 			openOrders_time_buy_prcMin			= self.filter_one_var (open_buy_lmt,
-															['receivedTime'],
+															[receivedTime],
 															limitPrice,
 															openOrders_prc_buy_min,min
 															)
@@ -1086,7 +1182,7 @@ class MarketMaker(object):
 															)
 
 			openOrders_time_sell_prcMax			= self.filter_one_var (open_sell_lmt,
-															['receivedTime'],
+															[receivedTime],
 															limitPrice,
 															openOrders_prc_sell_max,max
 															)
@@ -1142,8 +1238,13 @@ class MarketMaker(object):
 
 #! ****************************************************************************************************			
 #! UNTUK DIHAPUS			
-			print(fut, 'UNTUK DIHAPUS')
-			print('filledOrder',filledOrder)
+
+			print(BOLD + str(('UNTUK DIHAPUS',fut  )),ENDC)
+
+			print('hold_avgPrc_buy',hold_avgPrc_buy)
+			print('hold_qty_buy',hold_qty_buy)
+			print('hold_qty_sell',hold_qty_sell)
+
 			print('filledOrders_sell_lastTime',filledOrders_sell_lastTime)
 			print('filledOrders_sell_lastTime_conv',filledOrders_sell_lastTime_conv)
 			print('filledOrders_sell_lastTime_conv_net',filledOrders_sell_lastTime_conv_net)
@@ -1151,8 +1252,6 @@ class MarketMaker(object):
 			print('filledOrders_buy_lastTime',filledOrders_buy_lastTime)
 			print('filledOrders_buy_lastTime_conv',filledOrders_buy_lastTime_conv)
 			print('filledOrders_buy_lastTime_conv_net',filledOrders_buy_lastTime_conv_net)
-
-
 
 			print('openOrders_qty_buy_sum',openOrders_qty_buy_sum)
 			print('openOrders_qty_sell_sum',openOrders_qty_sell_sum)
@@ -1188,6 +1287,7 @@ class MarketMaker(object):
 			print('openOrders_oid_buy_cancel',openOrders_oid_buy_cancel)
 			print('openOrders_oid_sell_edit',openOrders_oid_sell_edit)
 			print('openOrders_oid_buy_edit',openOrders_oid_buy_edit)
+
 			print(fut, 'UNTUK DIHAPUS')
 
 #! ****************************************************************************************************			
@@ -1217,14 +1317,14 @@ class MarketMaker(object):
 		# cek kuantitas order beli TERBARU disubmit--> last_update_timestamp	max									 
 			openOrders_qty_buy_max		= self.filter_one_var (open_buy,
 															[unfilledSize],
-															['receivedTime'],
+															[receivedTime],
 															openOrders_time_buy_max,max
 															)
 
 		# cek kuantitas order jual TERBARU disubmit--> last_update_timestamp	max									 
 			openOrders_qty_sell_max		= self.filter_one_var (open_buy,
 															[unfilledSize],
-															['receivedTime'],
+															[receivedTime],
 															openOrders_time_sell_max,max
 															)
                                                             
@@ -1237,74 +1337,74 @@ class MarketMaker(object):
 #!#####  
 
 			openOrders_oid_buy_max2=  0 if openOrders_time_buy_max2== 0 else ([ o[order_id] for o in [
-					o for o in open_buy_lmt  if o['receivedTime']== openOrders_time_buy_max2 ]])[0]
+					o for o in open_buy_lmt  if o[receivedTime]== openOrders_time_buy_max2 ]])[0]
 
 			openOrders_oid_buy_max1=  0 if openOrders_time_buy_max1== 0 else ([ o[order_id] for o in [
-					o for o in open_buy_lmt  if o['receivedTime']== openOrders_time_buy_max1 ]])[0]
+					o for o in open_buy_lmt  if o[receivedTime]== openOrders_time_buy_max1 ]])[0]
 #!!!!!!
 			openOrders_qty_buy_max2=  0 if openOrders_time_buy_max2== 0 else ([ o[unfilledSize] for o in [
-					o for o in open_buy_lmt  if o['receivedTime']== openOrders_time_buy_max2 ]])[0]
+					o for o in open_buy_lmt  if o[receivedTime]== openOrders_time_buy_max2 ]])[0]
 
 			openOrders_qty_buy_max1=  0 if openOrders_time_buy_max1== 0 else ([ o[unfilledSize] for o in [
-					o for o in open_buy_lmt  if o['receivedTime']== openOrders_time_buy_max1 ]])[0]
+					o for o in open_buy_lmt  if o[receivedTime]== openOrders_time_buy_max1 ]])[0]
 
 			openOrders_prc_buy_max2= 0 if openOrders_time_buy_max2== 0 else ([ o[limitPrice] for o in [
-					o for o in open_buy_lmt  if o['receivedTime']== openOrders_time_buy_max2 ]])[0]
+					o for o in open_buy_lmt  if o[receivedTime]== openOrders_time_buy_max2 ]])[0]
 
 			openOrders_prc_buy_max1= 0 if openOrders_time_buy_max1 == 0 else ([ o[limitPrice] for o in [
-					o for o in open_buy_lmt  if o['receivedTime']== openOrders_time_buy_max1 ]])[0]
+					o for o in open_buy_lmt  if o[receivedTime]== openOrders_time_buy_max1 ]])[0]
 
 			openOrders_oid_sell_max2= 0 if openOrders_time_sell_max2== 0 else ([ o[order_id] for o in [
-					o for o in open_sell_lmt  if o['receivedTime']== openOrders_time_sell_max2 ]])[0]
+					o for o in open_sell_lmt  if o[receivedTime]== openOrders_time_sell_max2 ]])[0]
 
 			openOrders_oid_sell_max1=  0 if openOrders_time_sell_max1== 0  else ([ o[order_id] for o in [
-					o for o in open_sell_lmt  if o['receivedTime']== openOrders_time_sell_max1 ]])[0]
+					o for o in open_sell_lmt  if o[receivedTime]== openOrders_time_sell_max1 ]])[0]
 
 			openOrders_qty_sell_max1=  0 if openOrders_time_sell_max1== 0 else ([ o[unfilledSize] for o in [
-					o for o in open_sell_lmt  if o['receivedTime']== openOrders_time_sell_max1 ]])[0]
+					o for o in open_sell_lmt  if o[receivedTime]== openOrders_time_sell_max1 ]])[0]
 
 			openOrders_qty_sell_max2=  0 if openOrders_time_sell_max2== 0 else ([ o[unfilledSize] for o in [
-					o for o in open_sell_lmt  if o['receivedTime']== openOrders_time_sell_max2 ]])[0]    
+					o for o in open_sell_lmt  if o[receivedTime]== openOrders_time_sell_max2 ]])[0]    
 
 			openOrders_prc_sell_max1= 0 if openOrders_time_sell_max1== 0 else ([ o[limitPrice] for o in [
-					o for o in open_sell_lmt  if o['receivedTime']== openOrders_time_sell_max1 ]])[0]
+					o for o in open_sell_lmt  if o[receivedTime]== openOrders_time_sell_max1 ]])[0]
 
 			openOrders_prc_sell_max2= 0 if openOrders_time_sell_max2== 0 else ([ o[limitPrice] for o in [
-					o for o in open_sell_lmt  if o['receivedTime']== openOrders_time_sell_max2 ]])[0]    
+					o for o in open_sell_lmt  if o[receivedTime]== openOrders_time_sell_max2 ]])[0]    
 
 #! *********************************
 	# cek seluruh open sell--> 'sell'
 
 			openOrders_oid_buy_lmt= 0 if open_buy_lmt== []  else ([ o[order_id] for o in [
-					o for o in open_buy_lmt if o['receivedTime']== openOrders_time_buy_lmt_max ]])[0]
+					o for o in open_buy_lmt if o[receivedTime]== openOrders_time_buy_lmt_max ]])[0]
 
 			openOrders_oid_sell_lmt= 0 if open_sell_lmt == [] else ([ o[order_id] for o in [
-					o for o in open_sell_lmt if o['receivedTime']== openOrders_time_sell_lmt_max ]])[0]	
+					o for o in open_sell_lmt if o[receivedTime]== openOrders_time_sell_lmt_max ]])[0]	
 
 			openOrders_oid_buy_stp= 0 if open_buy_stp== []  else ([ o[order_id] for o in [
-					o for o in open_buy_stp if o['receivedTime']== openOrders_time_buy_stp_max]])[0]
+					o for o in open_buy_stp if o[receivedTime]== openOrders_time_buy_stp_max]])[0]
 
 
 			openOrders_prcStp_buy_stp= 0 if open_buy_stp== []  else ([ o['stopPrice'] for o in [
-					o for o in open_buy_stp if o['receivedTime']== openOrders_time_buy_stp_max]])[0]
+					o for o in open_buy_stp if o[receivedTime]== openOrders_time_buy_stp_max]])[0]
 
 			openOrders_prcStp_sell_stp= 0 if open_sell_stp== []  else ([ o['stopPrice'] for o in [
-					o for o in open_sell_stp if o['receivedTime']== openOrders_time_sell_stp_max]])[0]
+					o for o in open_sell_stp if o[receivedTime]== openOrders_time_sell_stp_max]])[0]
 
 			openOrders_prc_buy_stp= 0 if open_buy_stp== []  else ([ o[limitPrice] for o in [
-					o for o in open_buy_stp if o['receivedTime']== openOrders_time_buy_stp_max]])[0]
+					o for o in open_buy_stp if o[receivedTime]== openOrders_time_buy_stp_max]])[0]
 
 			openOrders_prc_sell_stp= 0 if open_sell_stp== []  else ([ o[limitPrice] for o in [
-					o for o in open_sell_stp if o['receivedTime']== openOrders_time_sell_stp_max]])[0]
+					o for o in open_sell_stp if o[receivedTime]== openOrders_time_sell_stp_max]])[0]
 
 			openOrders_oid_sell_stp= 0 if open_sell_stp== [] else ([ o[order_id] for o in [
-					o for o in open_sell_stp if o['receivedTime']== openOrders_time_sell_stp_max  ]])[0]
+					o for o in open_sell_stp if o[receivedTime]== openOrders_time_sell_stp_max  ]])[0]
 
 			openOrders_oid_buy_stp_len= 0 if openOrders_oid_buy_stp== 0  else len([ o[order_id] for o in [
-					o for o in open_buy_stp if o['receivedTime']== openOrders_time_buy_stp_max ]])
+					o for o in open_buy_stp if o[receivedTime]== openOrders_time_buy_stp_max ]])
 
 			openOrders_oid_sell_stp_len= 0 if openOrders_oid_sell_stp == 0 else len([ o[order_id] for o in [
-					o for o in open_sell_stp if o['receivedTime']== openOrders_time_sell_stp_max  ]])
+					o for o in open_sell_stp if o[receivedTime]== openOrders_time_sell_stp_max  ]])
 
 #? URUTAN KERJA
 	#? CEK APAKAH SALDO SUDAH SEIMBANG, POSISI/OPEN BUY - SELL = 0?
@@ -1651,7 +1751,7 @@ class MarketMaker(object):
 			over_inventory_buy_contra                = over_inventory_buy and avg_up_qty == False #PERCOBAAN AVG DOWN 1
 			over_inventory_sell_contra                = over_inventory_sell and avg_down_qty == False
 
-
+#normal
 
 #! ************************************************************************************************************************************
 #! anti jual/beli rugi
@@ -1721,6 +1821,7 @@ class MarketMaker(object):
 #? NORMAL: qty < X, berperilaku seperti MM 
 
 
+#? qty = 0 dan secara keseluruhan tidak ada masalah dengan qty instrumen (ada over/under inventory)
 			zero_buy= ((buyable_test ==1  and  rasio_buy_sell == False) or rasio_sell_buy) and matched_buy == False and hold_qty_buy == 0 and test_timeQty_buy 
 			zero_sell= ((sellable_test ==1 and rasio_sell_buy == False) or rasio_buy_sell)and matched_buy == False and hold_qty_sell == 0 and test_timeQty_sell 
 			
